@@ -21,7 +21,8 @@ I am not planning on:
 
 ## Plans
 
-1. Make a backend endpoint that returns some data (randomized string?)
+(deleted as we move along)
+
 2. Have front end be able to fetch and display data from the endpoint
 3. Style front end
 4. Add endpoints for CRUD operations
