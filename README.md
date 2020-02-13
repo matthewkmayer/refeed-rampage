@@ -18,3 +18,15 @@ I am not planning on:
 
 * providing support for anyone else using this
 * making this Amazon scale production ready
+
+## Plans
+
+1. Make a backend endpoint that returns some data (randomized string?)
+2. Have front end be able to fetch and display data from the endpoint
+3. Style front end
+4. Add endpoints for CRUD operations
+5. Frontend CRUD operations
+6. Authentication?
+7. How to deploy? ECS Fargate is serverless ;)
+8. Backing data stores? DynamoDB?
+9. TLS via a load balancer or Let's Encrypt?
