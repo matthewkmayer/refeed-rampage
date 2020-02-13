@@ -1,6 +1,8 @@
 # refeed-rampage
 
-Tracking refeed food
+Tracking refeed meals.
+
+![Build](https://github.com/matthewkmayer/refeed-rampage/workflows/Build/badge.svg)
 
 ## What is this?
 
