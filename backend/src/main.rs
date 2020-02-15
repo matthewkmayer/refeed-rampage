@@ -20,13 +20,13 @@ async fn main() {
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }
 
-fn all_meals() -> Meals {
+fn all_meals() -> Vec<Meal> {
     let m1 = Meal {
         name: format!("meal {}", rand::random::<i32>()),
         id: rand::random::<u32>(),
     };
 
-    Meals { meals: vec![m1] }
+    vec![m1]
 }
 
 // TODO: extract these types somewhere else

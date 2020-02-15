@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::iter::*;
 // use futures::Future;
 
-type MealMap = IndexMap<Meal, u32>;
+type MealMap = Vec<Meal>;
 
 // Model
 struct Model {
@@ -38,7 +38,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!("updated");
             log!(format!("Response data: {:#?}", meals));
             model.meals = meals;
-            orders.skip();
         }
         Msg::DataFetched(Err(fail_reason)) => {
             log!("error: {:#?}", fail_reason);
@@ -54,20 +53,18 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 // View
 /// The top-level component we pass to the virtual dom.
 fn view(model: &Model) -> impl View<Msg> {
-    div![
-        div![
-            style! {
-                // Example of conditional logic in a style.
-                St::Color => {"gray"};
-                St::Border => "2px solid #004422";
-                St::Padding => unit!(20, px);
-            },
-            h3!["Meals available"],
-            model.meals.iter().map(|m| h4![format!("{:?}", m)]),
-            button![simple_ev(Ev::Click, Msg::FetchData), "get em"],
-        ],
-        h3!["What are we counting  ?"],
-    ]
+    log!("meals be {:?}", model.meals);
+    div![div![
+        style! {
+            // Example of conditional logic in a style.
+            St::Color => {"gray"};
+            St::Border => "2px solid #004422";
+            St::Padding => unit!(20, px);
+        },
+        h3!["Meals available:"],
+        model.meals.iter().map(|m| h4![format!("{:?}", m)]),
+        button![simple_ev(Ev::Click, Msg::FetchData), "get em"],
+    ],]
 }
 
 // https://seed-rs.org/guide/http-requests-and-state
@@ -85,10 +82,6 @@ pub fn render() {
     app.update(Msg::FetchData);
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
-struct Meals {
-    meals: IndexMap<Meal, u32>,
-}
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Debug)]
 struct Meal {
     name: String,
