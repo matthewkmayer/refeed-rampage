@@ -1,7 +1,7 @@
 use seed::{prelude::*, *};
+use serde::{Serialize, Deserialize};
 
 // Model
-
 struct Model {
     count: i32,
     what_we_count: String,
@@ -18,7 +18,6 @@ impl Default for Model {
 }
 
 // Update
-
 #[derive(Clone)]
 enum Msg {
     Increment,
@@ -61,7 +60,6 @@ fn view(model: &Model) -> impl View<Msg> {
 
     div![
         outer_style,
-        h1!["The Grand Total"],
         div![
             style! {
                 // Example of conditional logic in a style.
@@ -84,7 +82,7 @@ fn view(model: &Model) -> impl View<Msg> {
             }
         ],
         success_level(model.count), // Incorporating a separate component
-        h3!["What are we counting eh2?"],
+        h3!["What are we counting  ?"],
         input![
             attrs! {At::Value => model.what_we_count},
             input_ev(Ev::Input, Msg::ChangeWWC)
@@ -92,7 +90,38 @@ fn view(model: &Model) -> impl View<Msg> {
     ]
 }
 
+// https://seed-rs.org/guide/http-requests-and-state
+
+#[derive(Clone, Debug)]
+enum Msg2 {
+    DataFetched(seed::fetch::ResponseDataResult<Meals>),
+}
+
+async fn fetch_data() -> Msg2 {
+    let url = "localhost:3030/meals";
+    match Request::new(url).fetch_json_data(Msg2::DataFetched).await {
+        Ok(i) => return i,
+        Err(e) => return e,
+    }
+}
+
+fn after_mount(_: Url, orders: &mut impl Orders<Msg2>) -> AfterMount<Model> {
+    orders.perform_cmd(fetch_data());
+    AfterMount::default()
+}
+
 #[wasm_bindgen(start)]
 pub fn render() {
-    App::builder(update, view).build_and_start();
+    App::builder(update, view).after_mount(after_mount).build_and_start();
+}
+
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+struct Meals {
+    meals: Vec<Meal>,
+}
+#[derive(Deserialize, Serialize, Clone, Debug)]
+struct Meal {
+    name: String,
+    id: u32,
 }

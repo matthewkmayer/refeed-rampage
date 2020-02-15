@@ -23,6 +23,7 @@ fn all_meals() -> Meals {
     Meals { meals: vec![m1] }
 }
 
+// TODO: extract these types somewhere else
 #[derive(Deserialize, Serialize)]
 struct Meals {
     meals: Vec<Meal>,
