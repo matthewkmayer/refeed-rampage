@@ -5,8 +5,8 @@ use warp::Filter;
 async fn main() {
     pretty_env_logger::init();
     let cors = warp::cors()
-        .allow_origin("http://localhost:8000")
-        .allow_origin("http://127.0.0.1:8000")
+        .allow_origin("http://localhost:8080")
+        .allow_origin("http://127.0.0.1:8080")
         .allow_methods(vec!["GET", "POST", "DELETE"]);
     // GET /hello/warp
     let hello = warp::path!("hello" / String).map(|name| format!("Hello, {}!", name));
