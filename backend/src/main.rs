@@ -25,8 +25,12 @@ fn all_meals() -> Vec<Meal> {
         name: format!("meal {}", rand::random::<i32>()),
         id: rand::random::<u32>(),
     };
+    let m2 = Meal {
+        name: format!("meal {}", rand::random::<i32>()),
+        id: rand::random::<u32>(),
+    };
 
-    vec![m1]
+    vec![m1, m2]
 }
 
 // TODO: extract these types somewhere else
