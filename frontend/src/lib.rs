@@ -9,6 +9,7 @@ type MealMap = Vec<Meal>;
 // Model
 struct Model {
     meals: MealMap,
+    error: Option<String>,
 }
 
 // Setup a default here, for initialization later.
@@ -16,6 +17,7 @@ impl Default for Model {
     fn default() -> Self {
         Self {
             meals: MealMap::new(),
+            error: None,
         }
     }
 }
@@ -38,6 +40,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!("updated");
             log!(format!("Response data: {:#?}", meals));
             model.meals = meals;
+            model.error = None;
         }
         Msg::DataFetched(Err(fail_reason)) => {
             log!("error: {:#?}", fail_reason);
@@ -45,7 +48,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 "Fetch error - Sending message failed - {:#?}",
                 fail_reason
             ));
-            orders.skip();
+            model.error = Some("Error fetching meals".to_string());
         }
     }
 }
@@ -62,7 +65,14 @@ fn view(model: &Model) -> impl View<Msg> {
             St::Padding => unit!(20, px);
         },
         h3!["Meals available:"],
-        model.meals.iter().map(|m| h4![format!("{:?}", m)]),
+        match &model.error {
+            Some(_e) => vec![h2!["oh no error"]],
+            None => model
+                .meals
+                .iter()
+                .map(|m| h4![format!("{:?}", m)])
+                .collect(),
+        },
         button![simple_ev(Ev::Click, Msg::FetchData), "get em"],
     ],]
 }
