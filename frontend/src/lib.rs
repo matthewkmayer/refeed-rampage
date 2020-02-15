@@ -1,8 +1,8 @@
-use indexmap::IndexMap;
+#![allow(clippy::large_enum_variant)]
+
 use seed::{browser::service::fetch, prelude::*, *};
 use serde::{Deserialize, Serialize};
 use std::iter::*;
-// use futures::Future;
 
 type MealMap = Vec<Meal>;
 

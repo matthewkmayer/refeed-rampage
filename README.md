@@ -14,6 +14,8 @@ This project is aimed at recording what I ate, how I liked it (will I eat the fo
 
 Serverless, modern web application with as little JavaScript as possible. The plan is to use Rust for the front and back end. This is meant to be a *usable* product so I can get a better understanding of WASM in production.
 
+Local dev link: http://127.0.0.1:8080/ .
+
 ## Non-goals
 
 I am not planning on:

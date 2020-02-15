@@ -34,10 +34,6 @@ fn all_meals() -> Vec<Meal> {
 }
 
 // TODO: extract these types somewhere else
-#[derive(Deserialize, Serialize)]
-struct Meals {
-    meals: Vec<Meal>,
-}
 
 #[derive(Deserialize, Serialize)]
 struct Meal {
