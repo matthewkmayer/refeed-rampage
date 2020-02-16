@@ -57,24 +57,29 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 /// The top-level component we pass to the virtual dom.
 fn view(model: &Model) -> impl View<Msg> {
     log!("meals be {:?}", model.meals);
-    div![div![
-        style! {
-            // Example of conditional logic in a style.
-            St::Color => {"gray"};
-            St::Border => "2px solid #004422";
-            St::Padding => unit!(20, px);
-        },
-        h3!["Meals available:"],
-        match &model.error {
-            Some(_e) => vec![h2!["oh no error"]],
-            None => model
-                .meals
-                .iter()
-                .map(|m| h4![format!("{:?}", m)])
-                .collect(),
-        },
-        button![simple_ev(Ev::Click, Msg::FetchData), "get em"],
-    ],]
+    
+    // let nav = div![
+    //     class!["navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow"],
+    //     ul!["doot", class!["navbar-brand col-sm-3 col-md-2 mr-0"], 
+    //         li!["sign in", class!["nav-item text-nowrap"], a!["/", class!["nav-link"]]]
+    //     ],
+    //     ];
+    // let list = match &model.error {
+    //     Some(_e) => vec![h2!["oh no error"]],
+    //     None => model
+    //         .meals
+    //         .iter()
+    //         .map(|m| h4![format!("{:?}", m)])
+    //         .collect(),
+    // };
+    // div![
+    //     nav,
+    //     div![
+    //         class!["container-fluid"],
+    //         h3!["Meals available:"],
+    //         list,
+    //     button![simple_ev(Ev::Click, Msg::FetchData), "get em"],
+    // ],]
 }
 
 // https://seed-rs.org/guide/http-requests-and-state
