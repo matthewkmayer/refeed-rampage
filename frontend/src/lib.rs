@@ -2,7 +2,7 @@
 
 use seed::{browser::service::fetch, prelude::*, *};
 use serde::{Deserialize, Serialize};
-use std::iter::*;
+// use std::iter::*;
 
 type MealMap = Vec<Meal>;
 
@@ -57,13 +57,53 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 /// The top-level component we pass to the virtual dom.
 fn view(model: &Model) -> impl View<Msg> {
     log!("meals be {:?}", model.meals);
-    
-    // let nav = div![
-    //     class!["navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow"],
-    //     ul!["doot", class!["navbar-brand col-sm-3 col-md-2 mr-0"], 
-    //         li!["sign in", class!["nav-item text-nowrap"], a!["/", class!["nav-link"]]]
-    //     ],
-    //     ];
+
+    // let inner_nav = div![
+    //     class!["col-md-2 d-none d-md-block bg-light sidebar"],
+    // ];
+    // let main_2 = div![
+    //     class!["chartjs-size-monitor"],
+    //     "main2",
+    // ];
+    // let main_contents = div![
+    //     class!["col-md-9 ml-sm-auto col-lg-10 px-4"],
+    //     main_2,
+    // ];
+    // let row = div![
+    //     class!["row"],
+    //     inner_nav,
+    //     main_contents,
+    // ];
+
+    // let main_container = div![
+    //     class!["container-fluid"],
+    //     row,
+
+    // ];
+
+    let nav = nav![
+        class!["navbar navbar-expand-lg navbar-light bg-light"],
+        a!["refeed rampage", class!["navbar-brand"]],
+        button![class!["navbar-toggler"],],
+        div![
+            class!["collapse navbar-collapse"],
+            ul![
+                class!["navbar-nav mr-auto"],
+                li![
+                    "sign in",
+                    class!["nav-item text-nowrap"],
+                    a!["/", class!["nav-link"],]
+                ]
+            ],
+        ],
+    ];
+
+    div![
+        nav,
+        // main_container,
+        h3!["content here"],
+    ]
+
     // let list = match &model.error {
     //     Some(_e) => vec![h2!["oh no error"]],
     //     None => model
