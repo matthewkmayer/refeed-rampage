@@ -82,23 +82,35 @@ fn view(model: &Model) -> impl View<Msg> {
     // ];
 
     let nav = nav![
-        class!["navbar navbar-expand-lg navbar-light bg-light"],
-        a!["refeed rampage", class!["navbar-brand"]],
-        button![class!["navbar-toggler"],],
+        class!["navbar navbar-expand-md navbar-light bg-light mb-4"],
+        a![
+            "refeed rampage",
+            class!["navbar-brand"],
+            attrs! {At::Href => "#"}
+        ],
         div![
             class!["collapse navbar-collapse"],
+            id!["navbarCollapse"],
             ul![
                 class!["navbar-nav mr-auto"],
                 li![
-                    "sign in",
-                    class!["nav-item text-nowrap"],
-                    a!["/", class!["nav-link"],]
+                    class!["nav-item active"],
+                    a![
+                        "Home",
+                        class!["nav-link"],
+                        span![class!["sr-only"], "(current)"],
+                        attrs! {At::Href => "#"}
+                    ]
+                ],
+                li![
+                    class!["nav-item"],
+                    a!["Meals", class!["nav-link"], attrs! {At::Href => "#"}]
                 ]
             ],
         ],
     ];
 
-    div![
+    vec![
         nav,
         // main_container,
         h3!["content here"],
