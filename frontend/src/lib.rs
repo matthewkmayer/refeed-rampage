@@ -12,7 +12,7 @@ struct Model {
     page: Pages,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 enum Pages {
     Home,
     Meals,
@@ -82,20 +82,13 @@ fn view(model: &Model) -> impl View<Msg> {
         div![class!["jumbotron"], page_contents,],
     ];
 
-    vec![nav(), main]
+    vec![nav(model), main]
 }
 
-fn nav() -> Node<Msg> {
-    let nav = nav![
-        class!["navbar navbar-expand-md navbar-light bg-light mb-4"],
-        a![
-            "refeed rampage",
-            class!["navbar-brand"],
-            attrs! {At::Href => "/"}
-        ],
-        div![
-            class!["collapse navbar-collapse"],
-            id!["navbarCollapse"],
+// this got wet in a hurry, how can we DRY it out?
+fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
+    match model.page {
+        Pages::Home => vec![
             ul![
                 class!["navbar-nav mr-auto"],
                 li![
@@ -116,10 +109,67 @@ fn nav() -> Node<Msg> {
                 "Login",
                 class!["form-inline mt-2 mt-md-0"],
                 attrs! {At::Href => "/login"},
-            ]
+            ],
         ],
-    ];
-    nav
+        Pages::Meals => vec![
+            ul![
+                class!["navbar-nav mr-auto"],
+                li![
+                    class!["nav-item"],
+                    a!["Home", class!["nav-link"], attrs! {At::Href => "/"}]
+                ],
+                li![
+                    class!["nav-item active"],
+                    a![
+                        "Meals",
+                        class!["nav-link"],
+                        span![class!["sr-only"], "(current)"],
+                        attrs! {At::Href => "/meals"}
+                    ]
+                ]
+            ],
+            a![
+                "Login",
+                class!["form-inline mt-2 mt-md-0"],
+                attrs! {At::Href => "/login"},
+            ],
+        ],
+        Pages::Login => vec![
+            ul![
+                class!["navbar-nav mr-auto"],
+                li![
+                    class!["nav-item"],
+                    a!["Home", class!["nav-link"], attrs! {At::Href => "/"}]
+                ],
+                li![
+                    class!["nav-item"],
+                    a!["Meals", class!["nav-link"], attrs! {At::Href => "/meals"}]
+                ]
+            ],
+            a![
+                "Login",
+                class!["form-inline mt-2 mt-md-0 active"],
+                span![class!["sr-only"], "(current)"],
+                attrs! {At::Href => "/login"},
+            ],
+        ],
+    }
+}
+
+fn nav(model: &Model) -> Node<Msg> {
+    nav![
+        class!["navbar navbar-expand-md navbar-light bg-light mb-4"],
+        a![
+            "refeed rampage",
+            class!["navbar-brand"],
+            attrs! {At::Href => "/"}
+        ],
+        div![
+            class!["collapse navbar-collapse"],
+            id!["navbarCollapse"],
+            nav_nodes(model),
+        ],
+    ]
 }
 
 fn meal_list(model: &Model) -> Vec<Node<Msg>> {

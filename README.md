@@ -27,7 +27,6 @@ I am not planning on:
 
 (deleted as we move along)
 
-3. Style front end
 4. Add endpoints for CRUD operations
 5. Frontend CRUD operations
 6. Authentication?
