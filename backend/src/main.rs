@@ -28,7 +28,7 @@ async fn main() {
 fn specific_meal(i: i32) -> Meal {
     Meal {
         name: format!("meal {}", rand::random::<i32>()),
-        id: i as u32,
+        id: i,
     }
 }
 
@@ -36,11 +36,11 @@ fn specific_meal(i: i32) -> Meal {
 fn all_meals() -> Vec<Meal> {
     let m1 = Meal {
         name: format!("meal {}", rand::random::<i32>()),
-        id: rand::random::<u32>(),
+        id: rand::random::<i32>(),
     };
     let m2 = Meal {
         name: format!("meal {}", rand::random::<i32>()),
-        id: rand::random::<u32>(),
+        id: rand::random::<i32>(),
     };
 
     vec![m1, m2]
@@ -51,5 +51,5 @@ fn all_meals() -> Vec<Meal> {
 #[derive(Deserialize, Serialize)]
 struct Meal {
     name: String,
-    id: u32,
+    id: i32,
 }

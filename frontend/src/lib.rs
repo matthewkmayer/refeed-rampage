@@ -213,14 +213,16 @@ fn nav(model: &Model) -> Node<Msg> {
     ]
 }
 
+// perhaps we don't want to make a link to the page/item we're on
+fn meal_item(m: &Meal) -> Node<Msg> {
+    let link = format!("/meals/{}", m.id);
+    h4![a![format!("{:?}", m), attrs! {At::Href => link},]]
+}
+
 fn meal_list(model: &Model) -> Vec<Node<Msg>> {
     match &model.error {
         Some(_e) => vec![h2!["oh no error"]],
-        None => model
-            .meals
-            .iter()
-            .map(|m| h4![format!("{:?}", m)])
-            .collect(),
+        None => model.meals.iter().map(|m| meal_item(m)).collect(),
     }
 }
 
@@ -266,8 +268,6 @@ pub fn render() {
 }
 
 fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
-    // see what page we're on?
-    log!["aftermount url is {:?}", url];
     let mut m: Model = Default::default();
 
     // same code as `routes`
@@ -296,5 +296,5 @@ fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Debug)]
 struct Meal {
     name: String,
-    id: u32,
+    id: i32,
 }
