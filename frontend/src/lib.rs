@@ -40,6 +40,7 @@ enum Msg {
 
 /// How we update the model
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
+    log!("updating, msg is {:?}", msg);
     match msg {
         Msg::FetchData { meal_id } => {
             log!("doot");
@@ -75,6 +76,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             model.error = Some("Error fetching meals".to_string());
         }
         Msg::ChangePage(page) => {
+            if let Pages::Meals { meal_id } = page {
+                orders.send_msg(Msg::FetchData { meal_id });
+            }
             model.page = page;
         }
     }
@@ -257,7 +261,36 @@ fn routes(url: Url) -> Option<Msg> {
 pub fn render() {
     seed::App::builder(update, view)
         .routes(routes)
+        .after_mount(after_mount)
         .build_and_start();
+}
+
+fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
+    // see what page we're on?
+    log!["aftermount url is {:?}", url];
+    let mut m: Model = Default::default();
+
+    // same code as `routes`
+    if url.path.is_empty() {
+        m.page = Pages::Home;
+    }
+
+    m.page = match url.path[0].as_ref() {
+        "meals" => match url.path.get(1).as_ref() {
+            Some(page) => {
+                let m_id = page.parse::<i32>().unwrap();
+                Pages::Meals {
+                    meal_id: Some(m_id),
+                }
+            }
+            None => Pages::Meals { meal_id: None },
+        },
+        "login" => Pages::Login,
+        _ => Pages::Home,
+    };
+
+    orders.send_msg(routes(url).unwrap());
+    AfterMount::new(m)
 }
 
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Debug)]
