@@ -43,7 +43,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     log!("updating, msg is {:?}", msg);
     match msg {
         Msg::FetchData { meal_id } => {
-            log!("doot");
             match meal_id {
                 Some(id) => orders.skip().perform_cmd(fetch_meal(id)),
                 None => orders.skip().perform_cmd(fetch_meals()),
@@ -60,7 +59,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 "Fetch error - Sending message failed - {:#?}",
                 fail_reason
             ));
-            model.error = Some("Error fetching meals".to_string());
+            model.error = Some(format!("Error fetching meals: {:?}", fail_reason));
         }
         Msg::MealFetched(Ok(meals)) => {
             log!(format!("Response data: {:#?}", meals));
@@ -73,7 +72,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 "Fetch error - Sending message failed - {:#?}",
                 fail_reason
             ));
-            model.error = Some("Error fetching meals".to_string());
+            model.error = Some(format!("Error fetching meal: {:?}", fail_reason));
         }
         Msg::ChangePage(page) => {
             if let Pages::Meals { meal_id } = page {
@@ -90,8 +89,12 @@ fn view(model: &Model) -> impl View<Msg> {
     log!("meals be {:?}", model.meals);
 
     let page_contents = match model.page {
-        Pages::Home => vec![h2!["refeed rampage home"]],
-        Pages::Login => vec![h2!["login"]],
+        Pages::Home => home(),
+        Pages::Login => vec![
+            h2!["login"],
+            p![],
+            p!["This will have authentication sometime."],
+        ],
         Pages::Meals { meal_id } => {
             match meal_id {
                 Some(_) => {
@@ -123,6 +126,20 @@ fn view(model: &Model) -> impl View<Msg> {
     ];
 
     vec![nav(model), main]
+}
+
+fn home() -> Vec<Node<Msg>> {
+    let header = h2!["refeed rampage home"];
+    let contents = div![
+        p![], // hacky spacing
+        h5!["What is this?"],
+        p![], // hacky spacing
+        p!["I tend to follow a cyclical ketogenic diet: low carbs six days a week and one refeed day a week that's high in carbs. The refeed day is also known as \"rampage day\" where *all the carbs* can be consumed."],
+        p!["This project is aimed at recording what I ate, how I liked it (will I eat the food again) and a general log on how I feel during/after the rampage."],
+        p![],
+        p!["Source code is available at ", a!["https://github.com/matthewkmayer/refeed-rampage", attrs! {At::Href => "https://github.com/matthewkmayer/refeed-rampage"}], "."]
+    ];
+    vec![header, contents]
 }
 
 // this got wet in a hurry, how can we DRY it out?
@@ -221,7 +238,11 @@ fn meal_item(m: &Meal) -> Node<Msg> {
 
 fn meal_list(model: &Model) -> Vec<Node<Msg>> {
     match &model.error {
-        Some(_e) => vec![h2!["oh no error"]],
+        Some(e) => vec![
+            h2!["Couldn't fetch requested data. :("],
+            p![],
+            p!["nerdy reasons: ", e],
+        ],
         None => model.meals.iter().map(|m| meal_item(m)).collect(),
     }
 }
