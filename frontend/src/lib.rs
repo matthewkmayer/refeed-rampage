@@ -9,6 +9,14 @@ type MealMap = Vec<Meal>;
 struct Model {
     meals: MealMap,
     error: Option<String>,
+    page: Pages,
+}
+
+#[derive(Clone, Debug)]
+enum Pages {
+    Home,
+    Meals,
+    Login,
 }
 
 // Setup a default here, for initialization later.
@@ -17,6 +25,7 @@ impl Default for Model {
         Self {
             meals: MealMap::new(),
             error: None,
+            page: Pages::Home,
         }
     }
 }
@@ -26,17 +35,16 @@ impl Default for Model {
 enum Msg {
     FetchData,
     DataFetched(fetch::ResponseDataResult<MealMap>),
+    ChangePage(Pages),
 }
 
 /// How we update the model
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::FetchData => {
-            log!("fetching");
             orders.skip().perform_cmd(fetch_data());
         }
         Msg::DataFetched(Ok(meals)) => {
-            log!("updated");
             log!(format!("Response data: {:#?}", meals));
             model.meals = meals;
             model.error = None;
@@ -49,6 +57,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             ));
             model.error = Some("Error fetching meals".to_string());
         }
+        Msg::ChangePage(page) => {
+            model.page = page;
+        }
     }
 }
 
@@ -57,16 +68,21 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 fn view(model: &Model) -> impl View<Msg> {
     log!("meals be {:?}", model.meals);
 
+    let page_contents = match model.page {
+        Pages::Home => vec![h2!["refeed rampage home"]],
+        Pages::Login => vec![h2!["login"]],
+        Pages::Meals => {
+            let mut c = meal_list(model);
+            c.push(button![simple_ev(Ev::Click, Msg::FetchData), "get em"]);
+            c
+        }
+    };
     let main = main![
         class!["container"],
-        div![class!["jumbotron"], meal_list(model),],
+        div![class!["jumbotron"], page_contents,],
     ];
 
-    vec![
-        nav(),
-        main,
-        button![simple_ev(Ev::Click, Msg::FetchData), "get em"],
-    ]
+    vec![nav(), main]
 }
 
 fn nav() -> Node<Msg> {
@@ -121,13 +137,32 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
 
 async fn fetch_data() -> Result<Msg, Msg> {
     let url = "http://127.0.0.1:3030/meals";
-    log!("boop sending request");
     Request::new(url).fetch_json_data(Msg::DataFetched).await
+}
+
+fn routes(url: Url) -> Option<Msg> {
+    log!("url is {:?}", url);
+    if url.path.is_empty() {
+        return Some(Msg::ChangePage(Pages::Home));
+    }
+
+    Some(match url.path[0].as_ref() {
+        "meals" => {
+            match url.path.get(1).as_ref() {
+                Some(_page) => Msg::ChangePage(Pages::Meals), // needs a subtype with meal id
+                None => Msg::ChangePage(Pages::Meals),
+            }
+        }
+        "login" => Msg::ChangePage(Pages::Login),
+        _ => Msg::ChangePage(Pages::Home),
+    })
 }
 
 #[wasm_bindgen(start)]
 pub fn render() {
-    let app = seed::App::builder(update, view).build_and_start();
+    let app = seed::App::builder(update, view)
+        .routes(routes)
+        .build_and_start();
 
     app.update(Msg::FetchData);
 }
