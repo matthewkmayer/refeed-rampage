@@ -2,7 +2,6 @@
 
 use seed::{browser::service::fetch, prelude::*, *};
 use serde::{Deserialize, Serialize};
-// use std::iter::*;
 
 type MealMap = Vec<Meal>;
 
@@ -60,12 +59,17 @@ fn view(model: &Model) -> impl View<Msg> {
 
     let main = main![
         class!["container"],
-        div![
-            class!["jumbotron"],
-            meal_list(model),
-        ],
+        div![class!["jumbotron"], meal_list(model),],
     ];
 
+    vec![
+        nav(),
+        main,
+        button![simple_ev(Ev::Click, Msg::FetchData), "get em"],
+    ]
+}
+
+fn nav() -> Node<Msg> {
     let nav = nav![
         class!["navbar navbar-expand-md navbar-light bg-light mb-4"],
         a![
@@ -89,9 +93,7 @@ fn view(model: &Model) -> impl View<Msg> {
                 ],
                 li![
                     class!["nav-item"],
-                    a!["Meals", class!["nav-link"],
-                        attrs! {At::Href => "/meals"}
-                    ]
+                    a!["Meals", class!["nav-link"], attrs! {At::Href => "/meals"}]
                 ]
             ],
             a![
@@ -101,24 +103,18 @@ fn view(model: &Model) -> impl View<Msg> {
             ]
         ],
     ];
-
-    vec![
-        nav,
-        main,
-        button![simple_ev(Ev::Click, Msg::FetchData), "get em"],
-    ]
+    nav
 }
 
 fn meal_list(model: &Model) -> Vec<Node<Msg>> {
-    let list = match &model.error {
+    match &model.error {
         Some(_e) => vec![h2!["oh no error"]],
         None => model
             .meals
             .iter()
             .map(|m| h4![format!("{:?}", m)])
             .collect(),
-    };
-    list
+    }
 }
 
 // https://seed-rs.org/guide/http-requests-and-state
