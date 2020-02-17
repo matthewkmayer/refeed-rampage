@@ -13,11 +13,22 @@ async fn main() {
     // GET /meals
     let all_meals = warp::path("meals")
         .map(|| warp::reply::json(&all_meals()))
-        .with(cors);
+        .with(&cors);
+    // GET /meals/:id
+    let meal_by_id = warp::path!("meals" / i32)
+        .map(|i| warp::reply::json(&specific_meal(i)))
+        .with(&cors);
 
-    let routes = warp::get().and(hello.or(all_meals));
+    let routes = warp::get().and(hello.or(meal_by_id.or(all_meals)));
 
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
+}
+
+fn specific_meal(i: i32) -> Meal {
+    Meal {
+        name: format!("meal {}", rand::random::<i32>()),
+        id: i as u32,
+    }
 }
 
 fn all_meals() -> Vec<Meal> {
