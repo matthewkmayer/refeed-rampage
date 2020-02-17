@@ -24,6 +24,7 @@ async fn main() {
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }
 
+// this is where data store interaction will happen
 fn specific_meal(i: i32) -> Meal {
     Meal {
         name: format!("meal {}", rand::random::<i32>()),
@@ -31,6 +32,7 @@ fn specific_meal(i: i32) -> Meal {
     }
 }
 
+// this is where data store interaction will happen
 fn all_meals() -> Vec<Meal> {
     let m1 = Meal {
         name: format!("meal {}", rand::random::<i32>()),

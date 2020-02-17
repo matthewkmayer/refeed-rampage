@@ -15,11 +15,10 @@ struct Model {
 #[derive(Clone, Debug, PartialEq)]
 enum Pages {
     Home,
-    Meals,
+    Meals { meal_id: Option<i32> },
     Login,
 }
 
-// Setup a default here, for initialization later.
 impl Default for Model {
     fn default() -> Self {
         Self {
@@ -33,23 +32,41 @@ impl Default for Model {
 // Update
 #[derive(Clone, Debug)]
 enum Msg {
-    FetchData,
-    DataFetched(fetch::ResponseDataResult<MealMap>),
+    FetchData { meal_id: Option<i32> },
+    MealsFetched(fetch::ResponseDataResult<MealMap>),
+    MealFetched(fetch::ResponseDataResult<Meal>),
     ChangePage(Pages),
 }
 
 /// How we update the model
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
-        Msg::FetchData => {
-            orders.skip().perform_cmd(fetch_data());
+        Msg::FetchData { meal_id } => {
+            log!("doot");
+            match meal_id {
+                Some(id) => orders.skip().perform_cmd(fetch_meal(id)),
+                None => orders.skip().perform_cmd(fetch_meals()),
+            };
         }
-        Msg::DataFetched(Ok(meals)) => {
+        Msg::MealsFetched(Ok(meals)) => {
             log!(format!("Response data: {:#?}", meals));
             model.meals = meals;
             model.error = None;
         }
-        Msg::DataFetched(Err(fail_reason)) => {
+        Msg::MealsFetched(Err(fail_reason)) => {
+            log!("error: {:#?}", fail_reason);
+            error!(format!(
+                "Fetch error - Sending message failed - {:#?}",
+                fail_reason
+            ));
+            model.error = Some("Error fetching meals".to_string());
+        }
+        Msg::MealFetched(Ok(meals)) => {
+            log!(format!("Response data: {:#?}", meals));
+            model.meals = vec![meals];
+            model.error = None;
+        }
+        Msg::MealFetched(Err(fail_reason)) => {
             log!("error: {:#?}", fail_reason);
             error!(format!(
                 "Fetch error - Sending message failed - {:#?}",
@@ -71,10 +88,29 @@ fn view(model: &Model) -> impl View<Msg> {
     let page_contents = match model.page {
         Pages::Home => vec![h2!["refeed rampage home"]],
         Pages::Login => vec![h2!["login"]],
-        Pages::Meals => {
-            let mut c = meal_list(model);
-            c.push(button![simple_ev(Ev::Click, Msg::FetchData), "get em"]);
-            c
+        Pages::Meals { meal_id } => {
+            match meal_id {
+                Some(_) => {
+                    log!("meal id specific");
+                    // should we have a meal detail view instead of this list which
+                    // will only have one item in it?
+                    let mut c = meal_list(model);
+                    c.push(button![
+                        simple_ev(Ev::Click, Msg::FetchData { meal_id: meal_id }),
+                        "refresh this item"
+                    ]);
+                    c
+                }
+                None => {
+                    log!("no meal id specific, show them all");
+                    let mut c = meal_list(model);
+                    c.push(button![
+                        simple_ev(Ev::Click, Msg::FetchData { meal_id: None }),
+                        "get all meals"
+                    ]);
+                    c
+                }
+            }
         }
     };
     let main = main![
@@ -111,7 +147,8 @@ fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
                 attrs! {At::Href => "/login"},
             ],
         ],
-        Pages::Meals => vec![
+        // match Meals with a specific meal specific or all meals:
+        Pages::Meals { .. } => vec![
             ul![
                 class!["navbar-nav mr-auto"],
                 li![
@@ -185,24 +222,32 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
 
 // https://seed-rs.org/guide/http-requests-and-state
 
-async fn fetch_data() -> Result<Msg, Msg> {
+async fn fetch_meals() -> Result<Msg, Msg> {
     let url = "http://127.0.0.1:3030/meals";
-    Request::new(url).fetch_json_data(Msg::DataFetched).await
+    Request::new(url).fetch_json_data(Msg::MealsFetched).await
+}
+
+async fn fetch_meal(id: i32) -> Result<Msg, Msg> {
+    let url = format!("http://127.0.0.1:3030/meals/{}", id);
+    log!("fetching from {}", url);
+    Request::new(url).fetch_json_data(Msg::MealFetched).await
 }
 
 fn routes(url: Url) -> Option<Msg> {
-    log!("url is {:?}", url);
     if url.path.is_empty() {
         return Some(Msg::ChangePage(Pages::Home));
     }
 
     Some(match url.path[0].as_ref() {
-        "meals" => {
-            match url.path.get(1).as_ref() {
-                Some(_page) => Msg::ChangePage(Pages::Meals), // needs a subtype with meal id
-                None => Msg::ChangePage(Pages::Meals),
+        "meals" => match url.path.get(1).as_ref() {
+            Some(page) => {
+                let m_id = page.parse::<i32>().unwrap();
+                Msg::ChangePage(Pages::Meals {
+                    meal_id: Some(m_id),
+                })
             }
-        }
+            None => Msg::ChangePage(Pages::Meals { meal_id: None }),
+        },
         "login" => Msg::ChangePage(Pages::Login),
         _ => Msg::ChangePage(Pages::Home),
     })
@@ -210,11 +255,9 @@ fn routes(url: Url) -> Option<Msg> {
 
 #[wasm_bindgen(start)]
 pub fn render() {
-    let app = seed::App::builder(update, view)
+    seed::App::builder(update, view)
         .routes(routes)
         .build_and_start();
-
-    app.update(Msg::FetchData);
 }
 
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Debug)]
