@@ -58,35 +58,20 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 fn view(model: &Model) -> impl View<Msg> {
     log!("meals be {:?}", model.meals);
 
-    // let inner_nav = div![
-    //     class!["col-md-2 d-none d-md-block bg-light sidebar"],
-    // ];
-    // let main_2 = div![
-    //     class!["chartjs-size-monitor"],
-    //     "main2",
-    // ];
-    // let main_contents = div![
-    //     class!["col-md-9 ml-sm-auto col-lg-10 px-4"],
-    //     main_2,
-    // ];
-    // let row = div![
-    //     class!["row"],
-    //     inner_nav,
-    //     main_contents,
-    // ];
-
-    // let main_container = div![
-    //     class!["container-fluid"],
-    //     row,
-
-    // ];
+    let main = main![
+        class!["container"],
+        div![
+            class!["jumbotron"],
+            meal_list(model),
+        ],
+    ];
 
     let nav = nav![
         class!["navbar navbar-expand-md navbar-light bg-light mb-4"],
         a![
             "refeed rampage",
             class!["navbar-brand"],
-            attrs! {At::Href => "#"}
+            attrs! {At::Href => "/"}
         ],
         div![
             class!["collapse navbar-collapse"],
@@ -99,39 +84,41 @@ fn view(model: &Model) -> impl View<Msg> {
                         "Home",
                         class!["nav-link"],
                         span![class!["sr-only"], "(current)"],
-                        attrs! {At::Href => "#"}
+                        attrs! {At::Href => "/"}
                     ]
                 ],
                 li![
                     class!["nav-item"],
-                    a!["Meals", class!["nav-link"], attrs! {At::Href => "#"}]
+                    a!["Meals", class!["nav-link"],
+                        attrs! {At::Href => "/meals"}
+                    ]
                 ]
             ],
+            a![
+                "Login",
+                class!["form-inline mt-2 mt-md-0"],
+                attrs! {At::Href => "/login"},
+            ]
         ],
     ];
 
     vec![
         nav,
-        // main_container,
-        h3!["content here"],
+        main,
+        button![simple_ev(Ev::Click, Msg::FetchData), "get em"],
     ]
+}
 
-    // let list = match &model.error {
-    //     Some(_e) => vec![h2!["oh no error"]],
-    //     None => model
-    //         .meals
-    //         .iter()
-    //         .map(|m| h4![format!("{:?}", m)])
-    //         .collect(),
-    // };
-    // div![
-    //     nav,
-    //     div![
-    //         class!["container-fluid"],
-    //         h3!["Meals available:"],
-    //         list,
-    //     button![simple_ev(Ev::Click, Msg::FetchData), "get em"],
-    // ],]
+fn meal_list(model: &Model) -> Vec<Node<Msg>> {
+    let list = match &model.error {
+        Some(_e) => vec![h2!["oh no error"]],
+        None => model
+            .meals
+            .iter()
+            .map(|m| h4![format!("{:?}", m)])
+            .collect(),
+    };
+    list
 }
 
 // https://seed-rs.org/guide/http-requests-and-state
