@@ -4,6 +4,7 @@ use std::convert::Infallible;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use warp::Filter;
+use warp::http::StatusCode;
 
 type Db = Arc<Mutex<BTreeMap<i32, Meal>>>;
 
@@ -26,28 +27,12 @@ async fn main() {
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }
 
-async fn prepopulate_db(db: Db) {
-    let mut d = db.lock().await;
-    d.insert(
-        1,
-        Meal {
-            id: 1,
-            name: "Pizza".to_string(),
-        },
-    );
-    d.insert(
-        2,
-        Meal {
-            id: 2,
-            name: "Burritos".to_string(),
-        },
-    );
-}
-
 fn meal_filters(
     db: Db,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    a_meal_filter(db.clone()).or(all_meal_filter(db))
+    a_meal_filter(db.clone())
+        .or(all_meal_filter(db.clone()))
+        .or(meal_create(db))
 }
 
 fn a_meal_filter(
@@ -68,10 +53,20 @@ fn all_meal_filter(
         .and_then(all_meals)
 }
 
+fn meal_create(
+    ds: Db,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("meals")
+        .and(warp::post())
+        .and(json_body())
+        .and(with_db(ds))
+        .and_then(create_meal)
+}
+
 async fn specific_meal(i: i32, db: Db) -> Result<impl warp::Reply, Infallible> {
     let fake_db = db.lock().await;
     // TODO: figure out why logging doesn't work as I expected it to
-    log::error!("ds is {:?}", db);
+    log::info!("ds is {:?}", db);
     Ok(warp::reply::json(&fake_db.get_key_value(&i).unwrap().1))
 }
 
@@ -82,13 +77,57 @@ async fn all_meals(db: Db) -> Result<impl warp::Reply, Infallible> {
     Ok(warp::reply::json(&a))
 }
 
+// should work with curl -i -X POST -H "content-type: application/json" -d '{"name":"Wings","id":3}'  http://127.0.0.1:3030/meals/
+pub async fn create_meal(create: Meal, db: Db) -> Result<impl warp::Reply, Infallible> {
+    log::debug!("create_meal: {:?}", create);
+
+    let mut d = db.lock().await;
+
+    if !d.contains_key(&create.id) {
+        let len = d.len() + 1;
+        d.insert(len as i32, Meal {
+            id: create.id,
+            name: create.name,
+            photos: None,
+        });
+    } else {
+        return Ok(StatusCode::BAD_REQUEST);
+    }
+
+    Ok(StatusCode::CREATED)
+}
+
 fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = std::convert::Infallible> + Clone {
     warp::any().map(move || db.clone())
 }
 
-// TODO: extract these types somewhere else
+fn json_body() -> impl Filter<Extract = (Meal,), Error = warp::Rejection> + Clone {
+    warp::body::content_length_limit(1024 * 16).and(warp::body::json())
+}
+
+async fn prepopulate_db(db: Db) {
+    let mut d = db.lock().await;
+    d.insert(
+        1,
+        Meal {
+            id: 1,
+            name: "Pizza".to_string(),
+            photos: None,
+        },
+    );
+    d.insert(
+        2,
+        Meal {
+            id: 2,
+            name: "Burritos".to_string(),
+            photos: None,
+        },
+    );
+}
+
 #[derive(Deserialize, Serialize, Debug)]
-struct Meal {
+pub struct Meal {
     name: String,
     id: i32,
+    photos: Option<String>,
 }
