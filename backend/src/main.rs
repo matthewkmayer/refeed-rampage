@@ -3,8 +3,8 @@ use std::collections::BTreeMap;
 use std::convert::Infallible;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use warp::Filter;
 use warp::http::StatusCode;
+use warp::Filter;
 
 type Db = Arc<Mutex<BTreeMap<i32, Meal>>>;
 
@@ -53,9 +53,7 @@ fn all_meal_filter(
         .and_then(all_meals)
 }
 
-fn meal_create(
-    ds: Db,
-) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+fn meal_create(ds: Db) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("meals")
         .and(warp::post())
         .and(json_body())
@@ -85,11 +83,14 @@ pub async fn create_meal(create: Meal, db: Db) -> Result<impl warp::Reply, Infal
 
     if !d.contains_key(&create.id) {
         let len = d.len() + 1;
-        d.insert(len as i32, Meal {
-            id: create.id,
-            name: create.name,
-            photos: None,
-        });
+        d.insert(
+            len as i32,
+            Meal {
+                id: create.id,
+                name: create.name,
+                photos: None,
+            },
+        );
     } else {
         return Ok(StatusCode::BAD_REQUEST);
     }
