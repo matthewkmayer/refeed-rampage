@@ -16,6 +16,7 @@ struct Model {
 enum Pages {
     Home,
     Meals { meal_id: Option<i32> },
+    CreateMeal,
     Login,
 }
 
@@ -29,6 +30,15 @@ impl Default for Model {
     }
 }
 
+#[derive(Serialize)]
+struct CreateMealRequestBody {
+    pub name: String,
+    pub id: i32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct MealCreatedResponse {}
+
 // Update
 #[derive(Clone, Debug)]
 enum Msg {
@@ -36,12 +46,23 @@ enum Msg {
     MealsFetched(fetch::ResponseDataResult<MealMap>),
     MealFetched(fetch::ResponseDataResult<Meal>),
     ChangePage(Pages),
+    CreateNewMeal { meal: Meal },
+    MealCreated(seed::fetch::ResponseDataResult<MealCreatedResponse>),
 }
 
 /// How we update the model
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     log!("updating, msg is {:?}", msg);
     match msg {
+        Msg::CreateNewMeal { meal } => {
+            orders.skip().perform_cmd(create_meal(meal));
+        }
+        Msg::MealCreated(Ok(m)) => {
+            log!("m is {:?}", m);
+        }
+        Msg::MealCreated(Err(fail_reason)) => {
+            model.error = Some(format!("Couldn't create meal: {:#?}", fail_reason));
+        }
         Msg::FetchData { meal_id } => {
             match meal_id {
                 Some(id) => orders.skip().perform_cmd(fetch_meal(id)),
@@ -90,6 +111,7 @@ fn view(model: &Model) -> impl View<Msg> {
 
     let page_contents = match model.page {
         Pages::Home => home(),
+        Pages::CreateMeal => vec![h2!["create a meal"], p![], input![], button![]],
         Pages::Login => vec![
             h2!["login"],
             p![],
@@ -169,7 +191,7 @@ fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
             ],
         ],
         // match Meals with a specific meal specific or all meals:
-        Pages::Meals { .. } => vec![
+        Pages::Meals { .. } | Pages::CreateMeal => vec![
             ul![
                 class!["navbar-nav mr-auto"],
                 li![
@@ -254,6 +276,15 @@ async fn fetch_meals() -> Result<Msg, Msg> {
     Request::new(url).fetch_json_data(Msg::MealsFetched).await
 }
 
+async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
+    let url = "http://127.0.0.1:3030/meals";
+    Request::new(url)
+        .method(Method::Post)
+        .send_json(&meal)
+        .fetch_json_data(Msg::MealCreated)
+        .await
+}
+
 async fn fetch_meal(id: i32) -> Result<Msg, Msg> {
     let url = format!("http://127.0.0.1:3030/meals/{}", id);
     log!("fetching from {}", url);
@@ -268,6 +299,7 @@ fn routes(url: Url) -> Option<Msg> {
     Some(match url.path[0].as_ref() {
         "meals" => match url.path.get(1).as_ref() {
             Some(page) => {
+                // Do we need a way to handle meals/create?
                 let m_id = page.parse::<i32>().unwrap();
                 Msg::ChangePage(Pages::Meals {
                     meal_id: Some(m_id),
