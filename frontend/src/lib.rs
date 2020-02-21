@@ -111,7 +111,7 @@ fn view(model: &Model) -> impl View<Msg> {
 
     let page_contents = match model.page {
         Pages::Home => home(),
-        Pages::CreateMeal => vec![h2!["create a meal"], p![], input![], button![]],
+        Pages::CreateMeal => create_meal_view(),
         Pages::Login => vec![
             h2!["login"],
             p![],
@@ -148,6 +148,10 @@ fn view(model: &Model) -> impl View<Msg> {
     ];
 
     vec![nav(model), main]
+}
+
+fn create_meal_view() -> Vec<Node<Msg>> {
+    vec![h2!["create a meal"], p![], input![], button!["new"]]
 }
 
 fn home() -> Vec<Node<Msg>> {
@@ -259,14 +263,19 @@ fn meal_item(m: &Meal) -> Node<Msg> {
 }
 
 fn meal_list(model: &Model) -> Vec<Node<Msg>> {
-    match &model.error {
+    let mut m = match &model.error {
         Some(e) => vec![
             h2!["Couldn't fetch requested data. :("],
             p![],
             p!["nerdy reasons: ", e],
         ],
         None => model.meals.iter().map(|m| meal_item(m)).collect(),
-    }
+    };
+
+    // This should be a button that changes the browser's current URL
+    // and sends a change page msg:
+    m.push(a![attrs! {At::Href => "meals/create"}, "add a new one"]);
+    m
 }
 
 // https://seed-rs.org/guide/http-requests-and-state
@@ -295,15 +304,22 @@ fn routes(url: Url) -> Option<Msg> {
     if url.path.is_empty() {
         return Some(Msg::ChangePage(Pages::Home));
     }
-
+    log!("url path is {}", url.path);
     Some(match url.path[0].as_ref() {
         "meals" => match url.path.get(1).as_ref() {
             Some(page) => {
-                // Do we need a way to handle meals/create?
-                let m_id = page.parse::<i32>().unwrap();
-                Msg::ChangePage(Pages::Meals {
-                    meal_id: Some(m_id),
-                })
+                if page == &"create" {
+                    return Some(Msg::ChangePage(Pages::CreateMeal));
+                }
+                match page.parse::<i32>() {
+                    Ok(m_id) => Msg::ChangePage(Pages::Meals {
+                        meal_id: Some(m_id),
+                    }),
+                    Err(e) => {
+                        log!("Got an error on meal id: {}", e);
+                        return None;
+                    }
+                }
             }
             None => Msg::ChangePage(Pages::Meals { meal_id: None }),
         },
@@ -330,12 +346,15 @@ fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
 
     m.page = match url.path[0].as_ref() {
         "meals" => match url.path.get(1).as_ref() {
-            Some(page) => {
-                let m_id = page.parse::<i32>().unwrap();
-                Pages::Meals {
-                    meal_id: Some(m_id),
+            Some(page) => match page.as_ref() {
+                "create" => Pages::CreateMeal,
+                _ => {
+                    let m_id = page.parse::<i32>().unwrap();
+                    Pages::Meals {
+                        meal_id: Some(m_id),
+                    }
                 }
-            }
+            },
             None => Pages::Meals { meal_id: None },
         },
         "login" => Pages::Login,
