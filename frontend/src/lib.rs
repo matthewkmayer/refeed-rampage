@@ -8,6 +8,7 @@ type MealMap = Vec<Meal>;
 // Model
 struct Model {
     meals: MealMap,
+    meal_under_construction: Option<Meal>,
     error: Option<String>,
     page: Pages,
 }
@@ -26,6 +27,22 @@ impl Default for Model {
             meals: MealMap::new(),
             error: None,
             page: Pages::Home,
+            meal_under_construction: None,
+        }
+    }
+}
+
+impl Model {
+    pub fn meal_ready_to_submit(self) -> bool {
+        match self.meal_under_construction {
+            Some(m) => {
+                if m.name.len() > 0 {
+                    true
+                } else {
+                    false
+                }
+            },
+            None => false,
         }
     }
 }
@@ -46,7 +63,9 @@ enum Msg {
     MealsFetched(fetch::ResponseDataResult<MealMap>),
     MealFetched(fetch::ResponseDataResult<Meal>),
     ChangePage(Pages),
-    CreateNewMeal { meal: Meal },
+    MealCreateUpdateName(String),
+    CreateNewMeal,
+    MealValidationError,
     MealCreated(seed::fetch::ResponseDataResult<MealCreatedResponse>),
 }
 
@@ -54,8 +73,21 @@ enum Msg {
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     log!("updating, msg is {:?}", msg);
     match msg {
-        Msg::CreateNewMeal { meal } => {
-            orders.skip().perform_cmd(create_meal(meal));
+        Msg::MealCreateUpdateName(name) => {
+            if model.meal_under_construction.is_none() {
+                model.meal_under_construction = Some(Meal{name: name, id: 0});
+            } else {
+                model.meal_under_construction.as_mut().unwrap().name = name;
+            }
+        },
+        Msg::CreateNewMeal => {
+            match &model.meal_under_construction {
+                Some(m) => orders.skip().perform_cmd(create_meal(m)),
+                None => {
+                    model.error = Some("provide a meal first".to_string());
+                    orders.send_msg(Msg::MealValidationError)
+                }
+            };
         }
         Msg::MealCreated(Ok(m)) => {
             log!("m is {:?}", m);
@@ -111,7 +143,7 @@ fn view(model: &Model) -> impl View<Msg> {
 
     let page_contents = match model.page {
         Pages::Home => home(),
-        Pages::CreateMeal => create_meal_view(),
+        Pages::CreateMeal => create_meal_view(model),
         Pages::Login => vec![
             h2!["login"],
             p![],
@@ -150,8 +182,13 @@ fn view(model: &Model) -> impl View<Msg> {
     vec![nav(model), main]
 }
 
-fn create_meal_view() -> Vec<Node<Msg>> {
-    vec![h2!["create a meal"], p![], input![], button!["new"]]
+fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
+    vec![
+        h2!["create a meal"],
+        p![],
+        input!["name", input_ev(Ev::Input, Msg::MealCreateUpdateName)],
+        button!["new", simple_ev("beep", Msg::CreateNewMeal)]
+    ]
 }
 
 fn home() -> Vec<Node<Msg>> {
@@ -285,11 +322,11 @@ async fn fetch_meals() -> Result<Msg, Msg> {
     Request::new(url).fetch_json_data(Msg::MealsFetched).await
 }
 
-async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
+async fn create_meal(meal: &Meal) -> Result<Msg, Msg> {
     let url = "http://127.0.0.1:3030/meals";
     Request::new(url)
         .method(Method::Post)
-        .send_json(&meal)
+        .send_json(meal)
         .fetch_json_data(Msg::MealCreated)
         .await
 }
