@@ -8,7 +8,7 @@ type MealMap = Vec<Meal>;
 // Model
 struct Model {
     meals: MealMap,
-    meal_under_construction: Option<Meal>,
+    meal_under_construction: Meal,
     error: Option<String>,
     page: Pages,
 }
@@ -27,23 +27,20 @@ impl Default for Model {
             meals: MealMap::new(),
             error: None,
             page: Pages::Home,
-            meal_under_construction: None,
+            meal_under_construction: Meal {
+                name: "".to_string(),
+                id: 0,
+            },
         }
     }
 }
 
 impl Model {
-    pub fn meal_ready_to_submit(self) -> bool {
-        match self.meal_under_construction {
-            Some(m) => {
-                if m.name.len() > 0 {
-                    true
-                } else {
-                    false
-                }
-            },
-            None => false,
+    pub fn meal_ready_to_submit(&self) -> bool {
+        if self.meal_under_construction.name.len() > 0 {
+            return true;
         }
+        return false;
     }
 }
 
@@ -64,7 +61,7 @@ enum Msg {
     MealFetched(fetch::ResponseDataResult<Meal>),
     ChangePage(Pages),
     MealCreateUpdateName(String),
-    CreateNewMeal,
+    CreateNewMeal(Meal),
     MealValidationError,
     MealCreated(seed::fetch::ResponseDataResult<MealCreatedResponse>),
 }
@@ -73,21 +70,19 @@ enum Msg {
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     log!("updating, msg is {:?}", msg);
     match msg {
+        Msg::MealValidationError => {
+            model.error = Some("Fill out the fields please".to_string());
+        }
         Msg::MealCreateUpdateName(name) => {
-            if model.meal_under_construction.is_none() {
-                model.meal_under_construction = Some(Meal{name: name, id: 0});
+            model.meal_under_construction.name = name;
+        }
+        Msg::CreateNewMeal(meal) => {
+            if model.meal_ready_to_submit() {
+                orders.skip().perform_cmd(create_meal(meal));
             } else {
-                model.meal_under_construction.as_mut().unwrap().name = name;
+                model.error = Some("provide a meal first".to_string());
+                orders.send_msg(Msg::MealValidationError);
             }
-        },
-        Msg::CreateNewMeal => {
-            match &model.meal_under_construction {
-                Some(m) => orders.skip().perform_cmd(create_meal(m)),
-                None => {
-                    model.error = Some("provide a meal first".to_string());
-                    orders.send_msg(Msg::MealValidationError)
-                }
-            };
         }
         Msg::MealCreated(Ok(m)) => {
             log!("m is {:?}", m);
@@ -187,7 +182,13 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
         h2!["create a meal"],
         p![],
         input!["name", input_ev(Ev::Input, Msg::MealCreateUpdateName)],
-        button!["new", simple_ev("beep", Msg::CreateNewMeal)]
+        button![
+            "new",
+            simple_ev(
+                "beep",
+                Msg::CreateNewMeal(model.meal_under_construction.clone())
+            )
+        ],
     ]
 }
 
@@ -322,11 +323,11 @@ async fn fetch_meals() -> Result<Msg, Msg> {
     Request::new(url).fetch_json_data(Msg::MealsFetched).await
 }
 
-async fn create_meal(meal: &Meal) -> Result<Msg, Msg> {
+async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
     let url = "http://127.0.0.1:3030/meals";
     Request::new(url)
         .method(Method::Post)
-        .send_json(meal)
+        .send_json(&meal)
         .fetch_json_data(Msg::MealCreated)
         .await
 }
