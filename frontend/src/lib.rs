@@ -37,10 +37,10 @@ impl Default for Model {
 
 impl Model {
     pub fn meal_ready_to_submit(&self) -> bool {
-        if self.meal_under_construction.name.len() > 0 {
+        if !self.meal_under_construction.name.is_empty() {
             return true;
         }
-        return false;
+        false
     }
 }
 
@@ -71,15 +71,23 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     log!("updating, msg is {:?}", msg);
     match msg {
         Msg::MealValidationError => {
+            log!("validation fail");
             model.error = Some("Fill out the fields please".to_string());
         }
         Msg::MealCreateUpdateName(name) => {
             model.meal_under_construction.name = name;
+            log!(
+                "model meal under constr is {}",
+                model.meal_under_construction.name
+            );
         }
         Msg::CreateNewMeal(meal) => {
+            log("creating a new meal");
             if model.meal_ready_to_submit() {
+                log!("ready to submit!");
                 orders.skip().perform_cmd(create_meal(meal));
             } else {
+                log!("error before submission");
                 model.error = Some("provide a meal first".to_string());
                 orders.send_msg(Msg::MealValidationError);
             }
@@ -185,7 +193,7 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
         button![
             "new",
             simple_ev(
-                "beep",
+                Ev::Click,
                 Msg::CreateNewMeal(model.meal_under_construction.clone())
             )
         ],
