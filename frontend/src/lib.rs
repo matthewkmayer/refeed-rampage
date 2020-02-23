@@ -186,18 +186,61 @@ fn view(model: &Model) -> impl View<Msg> {
 }
 
 fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
-    vec![
-        h2!["create a meal"],
+    // <form>
+    //   <div class="form-row">
+    //   <div class="col">
+    //     <input type="text" class="form-control" placeholder="First name">
+    //   </div>
+    //   <div class="col">
+    //     <input type="text" class="form-control" placeholder="Last name">
+    //   </div>
+    // </div>
+    // </form>
+    let new_create_meal_view = vec![
+        h2!["creating a new one"],
         p![],
-        input!["name", input_ev(Ev::Input, Msg::MealCreateUpdateName)],
-        button![
-            "new",
-            simple_ev(
-                Ev::Click,
-                Msg::CreateNewMeal(model.meal_under_construction.clone())
-            )
+        div![
+            class!["form-check form-group row"],
+            input![
+                class!["form-check-input"],
+                attrs! {At::Type => "text"},
+                id!["checkitone"],
+            ],
+            label![
+                class!["form-check-label"],
+                attrs! {At::For => "checkitone"},
+                "lbl",
+            ],
         ],
-    ]
+        div![
+            class!["form-group row"],
+            div![
+                class!["col-sm-10"],
+                button![
+                    "make it",
+                    simple_ev(
+                        Ev::Click,
+                        Msg::CreateNewMeal(model.meal_under_construction.clone())
+                    )
+                ],
+            ]
+        ],
+    ];
+
+    // let red_create_meal_view = vec![
+    //     h2!["create a meal"],
+    //     p![],
+    //     input!["name", input_ev(Ev::Input, Msg::MealCreateUpdateName)],
+    //     button![
+    //         "new",
+    //         simple_ev(
+    //             Ev::Click,
+    //             Msg::CreateNewMeal(model.meal_under_construction.clone())
+    //         )
+    //     ],
+    // ];
+
+    new_create_meal_view
 }
 
 fn home() -> Vec<Node<Msg>> {
@@ -309,9 +352,7 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
         None => model.meals.iter().map(|m| meal_item(m)).collect(),
     };
 
-    // This should be a button that changes the browser's current URL
-    // and sends a change page msg:
-    m.push(a![attrs! {At::Href => "meals/create"}, "add a new one"]);
+    m.push(a![attrs! {At::Href => "/meals/create"}, "add a new one"]);
     m
 }
 
