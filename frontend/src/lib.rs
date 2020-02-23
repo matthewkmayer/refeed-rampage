@@ -234,11 +234,7 @@ fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
                     a!["Meals", class!["nav-link"], attrs! {At::Href => "/meals"}]
                 ]
             ],
-            a![
-                "Login",
-                class!["form-inline mt-2 mt-md-0"],
-                attrs! {At::Href => "/login"},
-            ],
+            button!["Login", attrs! {At::Href => "/login"},],
         ],
         // match Meals with a specific meal specific or all meals:
         Pages::Meals { .. } | Pages::CreateMeal => vec![
@@ -258,11 +254,7 @@ fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
                     ]
                 ]
             ],
-            a![
-                "Login",
-                class!["form-inline mt-2 mt-md-0"],
-                attrs! {At::Href => "/login"},
-            ],
+            button!["Login", attrs! {At::Href => "/login"},],
         ],
         Pages::Login => vec![
             ul![
@@ -276,11 +268,10 @@ fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
                     a!["Meals", class!["nav-link"], attrs! {At::Href => "/meals"}]
                 ]
             ],
-            a![
+            button![
                 "Login",
-                class!["form-inline mt-2 mt-md-0 active"],
-                span![class!["sr-only"], "(current)"],
                 attrs! {At::Href => "/login"},
+                span![class!["sr-only"], "(current)"],
             ],
         ],
     }
