@@ -9,6 +9,7 @@ type MealMap = Vec<Meal>;
 struct Model {
     meals: MealMap,
     meal_under_construction: Meal,
+    meal: Meal,
     error: Option<String>,
     page: Pages,
 }
@@ -28,6 +29,12 @@ impl Default for Model {
             error: None,
             page: Pages::Home,
             meal_under_construction: Meal {
+                name: "".to_string(),
+                description: "".to_string(),
+                id: 0,
+                photos: None,
+            },
+            meal: Meal {
                 name: "".to_string(),
                 description: "".to_string(),
                 id: 0,
@@ -57,6 +64,9 @@ struct CreateMealRequestBody {
 #[derive(Debug, Clone, Deserialize)]
 struct MealCreatedResponse {}
 
+#[derive(Debug, Clone, Deserialize)]
+struct MealDeletedResponse {}
+
 // Update
 #[derive(Clone, Debug)]
 enum Msg {
@@ -69,12 +79,21 @@ enum Msg {
     CreateNewMeal(Meal),
     MealValidationError,
     MealCreated(seed::fetch::ResponseDataResult<MealCreatedResponse>),
+    DeleteMeal { meal_id: i32 },
+    MealDeleted(seed::fetch::ResponseDataResult<MealDeletedResponse>),
 }
 
 /// How we update the model
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     // log!("updating, msg is {:?}", msg);
     match msg {
+        Msg::MealDeleted(_) => {
+            log!("deleted!");
+            // go back to all meals page
+        }
+        Msg::DeleteMeal { meal_id: id } => {
+            orders.skip().perform_cmd(delete_meal(id));
+        }
         Msg::MealValidationError => {
             log!("validation fail");
             model.error = Some("Fill out the fields please".to_string());
@@ -124,6 +143,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             model.error = None;
         }
         Msg::MealsFetched(Err(fail_reason)) => {
+            // 404 should go to 404 page
             log!("error: {:#?}", fail_reason);
             error!(format!(
                 "Fetch error - Sending message failed - {:#?}",
@@ -131,8 +151,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             ));
             model.error = Some(format!("Error fetching meals: {:?}", fail_reason));
         }
-        Msg::MealFetched(Ok(meals)) => {
-            model.meals = vec![meals];
+        Msg::MealFetched(Ok(meal)) => {
+            model.meals = vec![];
+            model.meal = meal;
             model.error = None;
         }
         Msg::MealFetched(Err(fail_reason)) => {
@@ -163,30 +184,26 @@ fn view(model: &Model) -> impl View<Msg> {
             p![],
             p!["This will have authentication sometime."],
         ],
-        Pages::Meals { meal_id } => {
-            match meal_id {
-                Some(_) => {
-                    log!("meal id specific");
-                    // should we have a meal detail view instead of this list which
-                    // will only have one item in it?
-                    let mut c = meal_list(model);
-                    c.push(button![
-                        simple_ev(Ev::Click, Msg::FetchData { meal_id: meal_id }),
-                        "refresh this item"
-                    ]);
-                    c
-                }
-                None => {
-                    log!("no meal id specific, show them all");
-                    let mut c = meal_list(model);
-                    c.push(button![
-                        simple_ev(Ev::Click, Msg::FetchData { meal_id: None }),
-                        "get all meals"
-                    ]);
-                    c
-                }
+        Pages::Meals { meal_id } => match meal_id {
+            Some(_) => {
+                log!("meal id specific");
+                let mut c = vec![meal_item(&model.meal)];
+                c.push(button![
+                    simple_ev(Ev::Click, Msg::FetchData { meal_id: meal_id }),
+                    "refresh this item"
+                ]);
+                c
             }
-        }
+            None => {
+                log!("no meal id specific, show them all");
+                let mut c = meal_list(model);
+                c.push(button![
+                    simple_ev(Ev::Click, Msg::FetchData { meal_id: None }),
+                    "get all meals"
+                ]);
+                c
+            }
+        },
     };
     let main = main![
         class!["container"],
@@ -336,10 +353,15 @@ fn nav(model: &Model) -> Node<Msg> {
     ]
 }
 
-// perhaps we don't want to make a link to the page/item we're on
+// for a detail view
 fn meal_item(m: &Meal) -> Node<Msg> {
-    let link = format!("/meals/{}", m.id);
-    h4![a![format!("{:?}", m), attrs! {At::Href => link},]]
+    div![
+        h4![m.name, div![p![m.description, class!["lead"]],]],
+        button![
+            simple_ev(Ev::Click, Msg::DeleteMeal { meal_id: m.id }),
+            "Delete it"
+        ]
+    ]
 }
 
 fn meal_list(model: &Model) -> Vec<Node<Msg>> {
@@ -349,7 +371,16 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
             p![],
             p!["nerdy reasons: ", e],
         ],
-        None => model.meals.iter().map(|m| meal_item(m)).collect(),
+        None => model
+            .meals
+            .iter()
+            .map(|m| {
+                h4![a![
+                    format!("{:?}", m),
+                    attrs! {At::Href => format!("/meals/{}", m.id)},
+                ]]
+            })
+            .collect(),
     };
 
     m.push(button![
@@ -365,6 +396,14 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
 async fn fetch_meals() -> Result<Msg, Msg> {
     let url = "http://127.0.0.1:3030/meals";
     Request::new(url).fetch_json_data(Msg::MealsFetched).await
+}
+
+async fn delete_meal(id: i32) -> Result<Msg, Msg> {
+    let url = format!("http://127.0.0.1:3030/meals/{}", id);
+    Request::new(url)
+        .method(Method::Delete)
+        .fetch_json_data(Msg::MealDeleted)
+        .await
 }
 
 async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
