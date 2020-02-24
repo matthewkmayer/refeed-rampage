@@ -89,6 +89,7 @@ pub async fn create_meal(create: Meal, db: Db) -> Result<impl warp::Reply, Infal
                 id: create.id,
                 name: create.name,
                 photos: None,
+                description: create.description,
             },
         );
     } else {
@@ -114,6 +115,7 @@ async fn prepopulate_db(db: Db) {
             id: 1,
             name: "Pizza".to_string(),
             photos: None,
+            description: "Delicious pizza".to_string(),
         },
     );
     d.insert(
@@ -122,6 +124,7 @@ async fn prepopulate_db(db: Db) {
             id: 2,
             name: "Burritos".to_string(),
             photos: None,
+            description: "Amazing burritos".to_string(),
         },
     );
 }
@@ -131,4 +134,5 @@ pub struct Meal {
     name: String,
     id: i32,
     photos: Option<String>,
+    description: String,
 }
