@@ -33,7 +33,8 @@ fn meal_filters(
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     a_meal_filter(db.clone())
         .or(all_meal_filter(db.clone()))
-        .or(meal_create(db))
+        .or(meal_create(db.clone()))
+        .or(meal_delete(db))
 }
 
 fn a_meal_filter(
@@ -60,6 +61,24 @@ fn meal_create(ds: Db) -> impl Filter<Extract = impl warp::Reply, Error = warp::
         .and(json_body())
         .and(with_db(ds))
         .and_then(create_meal)
+}
+
+fn meal_delete(ds: Db) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("meals" / i32)
+        .and(warp::delete())
+        .and(with_db(ds))
+        .and_then(delete_meal)
+}
+
+// curl -i -X DELETE http://localhost:3030/meals/1
+async fn delete_meal(i: i32, db: Db) -> Result<impl warp::Reply, Infallible> {
+    let mut fake_db = db.lock().await;
+    if fake_db.contains_key(&i) {
+        fake_db.remove(&i);
+    } else {
+        return Ok(StatusCode::BAD_REQUEST);
+    }
+    Ok(StatusCode::NO_CONTENT)
 }
 
 async fn specific_meal(i: i32, db: Db) -> Result<impl warp::Reply, Infallible> {
