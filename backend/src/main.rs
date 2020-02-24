@@ -18,7 +18,8 @@ async fn main() {
     let cors = warp::cors()
         .allow_origin("http://localhost:8080")
         .allow_origin("http://127.0.0.1:8080")
-        .allow_methods(vec!["GET", "POST", "DELETE"]);
+        .allow_methods(vec!["GET", "POST", "DELETE"])
+        .allow_headers(vec!["content-type"]);
 
     let routes = meal_filters(fake_db.clone())
         .with(&cors)
@@ -75,28 +76,32 @@ async fn all_meals(db: Db) -> Result<impl warp::Reply, Infallible> {
     Ok(warp::reply::json(&a))
 }
 
-// should work with curl -i -X POST -H "content-type: application/json" -d '{"name":"Wings","id":3}'  http://127.0.0.1:3030/meals/
+// should work with curl -i -X POST -H "content-type: application/json" -d '{"name":"Wings","id":3,"description":"mmm"}'  http://127.0.0.1:3030/meals/
 pub async fn create_meal(create: Meal, db: Db) -> Result<impl warp::Reply, Infallible> {
     log::debug!("create_meal: {:?}", create);
 
     let mut d = db.lock().await;
+    let len: usize;
 
     if !d.contains_key(&create.id) {
-        let len = d.len() + 1;
+        len = d.len() + 1;
         d.insert(
             len as i32,
             Meal {
-                id: create.id,
+                id: len as i32,
                 name: create.name,
                 photos: None,
                 description: create.description,
             },
         );
     } else {
-        return Ok(StatusCode::BAD_REQUEST);
+        let r = warp::reply::json(&());
+        return Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST));
     }
 
-    Ok(StatusCode::CREATED)
+    // casting between usize and i32 would go away when a real backend is used
+    let json = warp::reply::json(d.get(&(len as i32)).unwrap());
+    Ok(warp::reply::with_status(json, StatusCode::CREATED))
 }
 
 fn with_db(db: Db) -> impl Filter<Extract = (Db,), Error = std::convert::Infallible> + Clone {

@@ -31,6 +31,7 @@ impl Default for Model {
                 name: "".to_string(),
                 description: "".to_string(),
                 id: 0,
+                photos: None,
             },
         }
     }
@@ -38,7 +39,9 @@ impl Default for Model {
 
 impl Model {
     pub fn meal_ready_to_submit(&self) -> bool {
-        if !self.meal_under_construction.name.is_empty() {
+        if !self.meal_under_construction.name.is_empty()
+            && !self.meal_under_construction.description.is_empty()
+        {
             return true;
         }
         false
@@ -103,8 +106,11 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         }
         Msg::MealCreated(Ok(m)) => {
             log!("m is {:?}", m);
+            model.error = None;
+            orders.send_msg(Msg::ChangePage(Pages::Meals { meal_id: None }));
         }
         Msg::MealCreated(Err(fail_reason)) => {
+            log!(format!("sad times: {:?}", fail_reason));
             model.error = Some(format!("Couldn't create meal: {:#?}", fail_reason));
         }
         Msg::FetchData { meal_id } => {
@@ -221,15 +227,19 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
                     ],
                 ],
             ],
-            button![
-                class!["btn btn-primary"],
-                "make it",
-                simple_ev(
-                    Ev::Click,
-                    Msg::CreateNewMeal(model.meal_under_construction.clone())
-                )
-            ],
         ],
+        button![
+            class!["btn btn-primary"],
+            "make it",
+            simple_ev(
+                Ev::Click,
+                Msg::CreateNewMeal(model.meal_under_construction.clone())
+            )
+        ],
+        match &model.error {
+            Some(e) => h3![format!("error was {}", e)],
+            None => empty(),
+        },
     ]
 }
 
@@ -358,7 +368,8 @@ async fn fetch_meals() -> Result<Msg, Msg> {
 }
 
 async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
-    let url = "http://127.0.0.1:3030/meals";
+    let url = "http://127.0.0.1:3030/meals/";
+    log!(format!("Sending something to {}", url));
     Request::new(url)
         .method(Method::Post)
         .send_json(&meal)
@@ -388,7 +399,7 @@ fn routes(url: Url) -> Option<Msg> {
                     }),
                     Err(e) => {
                         log!("Got an error on meal id: {}", e);
-                        return None;
+                        Msg::ChangePage(Pages::Meals { meal_id: None })
                     }
                 }
             }
@@ -419,12 +430,12 @@ fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
         "meals" => match url.path.get(1).as_ref() {
             Some(page) => match page.as_ref() {
                 "create" => Pages::CreateMeal,
-                _ => {
-                    let m_id = page.parse::<i32>().unwrap();
-                    Pages::Meals {
+                _ => match page.parse::<i32>() {
+                    Ok(m_id) => Pages::Meals {
                         meal_id: Some(m_id),
-                    }
-                }
+                    },
+                    Err(_) => Pages::Meals { meal_id: None },
+                },
             },
             None => Pages::Meals { meal_id: None },
         },
@@ -439,6 +450,7 @@ fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Debug)]
 struct Meal {
     name: String,
-    description: String,
     id: i32,
+    photos: Option<String>,
+    description: String,
 }
