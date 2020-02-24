@@ -29,6 +29,7 @@ impl Default for Model {
             page: Pages::Home,
             meal_under_construction: Meal {
                 name: "".to_string(),
+                description: "".to_string(),
                 id: 0,
             },
         }
@@ -61,6 +62,7 @@ enum Msg {
     MealFetched(fetch::ResponseDataResult<Meal>),
     ChangePage(Pages),
     MealCreateUpdateName(String),
+    MealCreateUpdateDescription(String),
     CreateNewMeal(Meal),
     MealValidationError,
     MealCreated(seed::fetch::ResponseDataResult<MealCreatedResponse>),
@@ -76,10 +78,17 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         }
         Msg::MealCreateUpdateName(name) => {
             model.meal_under_construction.name = name;
-            log!(
-                "model meal under constr is {}",
+            log!(format!(
+                "model meal under constr name is {}",
                 model.meal_under_construction.name
-            );
+            ));
+        }
+        Msg::MealCreateUpdateDescription(desc) => {
+            model.meal_under_construction.description = desc;
+            log!(format!(
+                "model meal under constr desc is {}",
+                model.meal_under_construction.description
+            ));
         }
         Msg::CreateNewMeal(meal) => {
             log("creating a new meal");
@@ -195,6 +204,7 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
                         class!["form-control"],
                         attrs! {At::Type => "text", At::Placeholder => "name" },
                         id!["mealname"],
+                        input_ev(Ev::Input, Msg::MealCreateUpdateName),
                     ],
                 ],
             ],
@@ -207,6 +217,7 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
                         class!["form-control"],
                         attrs! {At::Type => "text", At::Placeholder => "Meal description" },
                         id!["mdesc"],
+                        input_ev(Ev::Input, Msg::MealCreateUpdateDescription),
                     ],
                 ],
             ],
@@ -428,5 +439,6 @@ fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Debug)]
 struct Meal {
     name: String,
+    description: String,
     id: i32,
 }
