@@ -68,7 +68,7 @@ enum Msg {
 
 /// How we update the model
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
-    log!("updating, msg is {:?}", msg);
+    // log!("updating, msg is {:?}", msg);
     match msg {
         Msg::MealValidationError => {
             log!("validation fail");
@@ -105,7 +105,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             };
         }
         Msg::MealsFetched(Ok(meals)) => {
-            log!(format!("Response data: {:#?}", meals));
             model.meals = meals;
             model.error = None;
         }
@@ -118,7 +117,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             model.error = Some(format!("Error fetching meals: {:?}", fail_reason));
         }
         Msg::MealFetched(Ok(meals)) => {
-            log!(format!("Response data: {:#?}", meals));
             model.meals = vec![meals];
             model.error = None;
         }
@@ -142,8 +140,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 // View
 /// The top-level component we pass to the virtual dom.
 fn view(model: &Model) -> impl View<Msg> {
-    log!("meals be {:?}", model.meals);
-
     let page_contents = match model.page {
         Pages::Home => home(),
         Pages::CreateMeal => create_meal_view(model),
@@ -186,61 +182,44 @@ fn view(model: &Model) -> impl View<Msg> {
 }
 
 fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
-    // <form>
-    //   <div class="form-row">
-    //   <div class="col">
-    //     <input type="text" class="form-control" placeholder="First name">
-    //   </div>
-    //   <div class="col">
-    //     <input type="text" class="form-control" placeholder="Last name">
-    //   </div>
-    // </div>
-    // </form>
-    let new_create_meal_view = vec![
+    vec![
         h2!["creating a new one"],
         p![],
-        div![
-            class!["form-check form-group row"],
-            input![
-                class!["form-check-input"],
-                attrs! {At::Type => "text"},
-                id!["checkitone"],
-            ],
-            label![
-                class!["form-check-label"],
-                attrs! {At::For => "checkitone"},
-                "lbl",
-            ],
-        ],
-        div![
-            class!["form-group row"],
+        form![
             div![
-                class!["col-sm-10"],
-                button![
-                    "make it",
-                    simple_ev(
-                        Ev::Click,
-                        Msg::CreateNewMeal(model.meal_under_construction.clone())
-                    )
+                class!["form-row"],
+                div![
+                    class!["form-group col-md-6"],
+                    label![attrs! {At::For => "mealname"}, "Meal name",],
+                    input![
+                        class!["form-control"],
+                        attrs! {At::Type => "text", At::Placeholder => "name" },
+                        id!["mealname"],
+                    ],
                 ],
-            ]
+            ],
+            div![
+                class!["form-row"],
+                div![
+                    class!["form-group col-md-9"],
+                    label![attrs! {At::For => "mdesc"}, "Meal description",],
+                    textarea![
+                        class!["form-control"],
+                        attrs! {At::Type => "text", At::Placeholder => "Meal description" },
+                        id!["mdesc"],
+                    ],
+                ],
+            ],
+            button![
+                class!["btn btn-primary"],
+                "make it",
+                simple_ev(
+                    Ev::Click,
+                    Msg::CreateNewMeal(model.meal_under_construction.clone())
+                )
+            ],
         ],
-    ];
-
-    // let red_create_meal_view = vec![
-    //     h2!["create a meal"],
-    //     p![],
-    //     input!["name", input_ev(Ev::Input, Msg::MealCreateUpdateName)],
-    //     button![
-    //         "new",
-    //         simple_ev(
-    //             Ev::Click,
-    //             Msg::CreateNewMeal(model.meal_under_construction.clone())
-    //         )
-    //     ],
-    // ];
-
-    new_create_meal_view
+    ]
 }
 
 fn home() -> Vec<Node<Msg>> {
@@ -352,7 +331,11 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
         None => model.meals.iter().map(|m| meal_item(m)).collect(),
     };
 
-    m.push(a![attrs! {At::Href => "/meals/create"}, "add a new one"]);
+    m.push(button![
+        attrs! {At::Href => "/meals/create"},
+        "add a new one"
+    ]);
+    m.push(p![]);
     m
 }
 
@@ -374,7 +357,6 @@ async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
 
 async fn fetch_meal(id: i32) -> Result<Msg, Msg> {
     let url = format!("http://127.0.0.1:3030/meals/{}", id);
-    log!("fetching from {}", url);
     Request::new(url).fetch_json_data(Msg::MealFetched).await
 }
 
