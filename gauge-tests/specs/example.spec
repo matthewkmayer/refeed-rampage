@@ -1,11 +1,10 @@
-# Getting Started with Gauge
+# Refeed rampage tests
 
-This is an executable specification file. This file follows markdown syntax. Every heading in this file denotes a scenario. Every bulleted point denotes a step.
-To execute this specification, use
-	npm test
+Tests for refeed rampage's frontend. End to end tests until a stubbed backend is sorted.
 
-## Search Taiko Repository
+## See default meals
 
-* Goto getgauge github page
-* Search for "Taiko"
-* Page contains "getgauge/taiko"
+* Goto refeed rampage home
+* Click "Meals"
+* Page contains "Pizza"
+* Page contains "Burritos"
