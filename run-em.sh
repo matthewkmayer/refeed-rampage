@@ -10,15 +10,14 @@
 echo "\n\nwaiting is the hardest part\n\n"
 sleep 5
 
-if r=npx gauge run gauge-tests/specs; then
+if r=$(npx gauge run gauge-tests/specs); then
     # Success.
     echo "woo r is $r"
 else
     echo "nooooo r is $r"
 fi
 
-# kill remaining cargo processes
-killall cargo-make
+# kill leftovers: backend and docker container
 killall backend
 docker kill rrampage
 docker rm rrampage
