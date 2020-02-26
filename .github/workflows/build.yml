@@ -65,7 +65,7 @@ jobs:
           args: -- -D warnings
 
   gauge-tests:
-    name: Clippy
+    name: ree-to-ree tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
