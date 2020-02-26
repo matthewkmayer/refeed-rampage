@@ -75,4 +75,5 @@ jobs:
           toolchain: stable
           override: true
       - run: npm install wasm-pack gauge
+      - run: npx gauge run specs # a temp tester
       - run: ./run-em.sh
