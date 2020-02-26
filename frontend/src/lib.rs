@@ -89,7 +89,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::MealDeleted(_) => {
             log!("deleted!");
-            // go back to all meals page
+            orders.send_msg(Msg::ChangePage(Pages::Meals { meal_id: None }));
         }
         Msg::DeleteMeal { meal_id: id } => {
             orders.skip().perform_cmd(delete_meal(id));
