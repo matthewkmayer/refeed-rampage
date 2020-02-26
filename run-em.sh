@@ -1,7 +1,5 @@
 #!/bin/sh
 
-npx gauge run gauge-tests/specs # temp
-
 # compile things
 (cd backend && cargo build)
 (cd frontend && cargo build && npx wasm-pack build  --target web --out-name package --dev)
@@ -11,10 +9,14 @@ npx gauge run gauge-tests/specs # temp
 # wait for services to come up: curl in a loop?
 echo "\n\nwaiting is the hardest part\n\n"
 sleep 5
-npx gauge run gauge-tests/specs
+$TEST_OUT=`npx gauge run gauge-tests/specs`
+echo "$TEST_OUT is:"
+echo $TEST_OUT
 
 # kill remaining cargo processes
 killall cargo-make
 killall backend
 docker kill rrampage
 docker rm rrampage
+
+exit $TEST_OUT
