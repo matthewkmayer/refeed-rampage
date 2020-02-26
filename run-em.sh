@@ -10,9 +10,7 @@
 # echo "\n\nwaiting is the hardest part\n\n"
 # sleep 5
 
-cd gauge-tests
-npm install taiko
-if R=$(npx gauge run specs); then
+if R=$(cd gauge-tests && npx gauge run specs); then
     # Success.
     echo "woo r is $R"
 else
