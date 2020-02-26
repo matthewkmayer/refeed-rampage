@@ -75,4 +75,5 @@ jobs:
           toolchain: stable
           override: true
       - run: npm install wasm-pack @getgauge/cli taiko
+      - run: cd gauge-tests && npm install taiko
       - run: ./run-em.sh
