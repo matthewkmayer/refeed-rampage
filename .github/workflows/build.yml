@@ -75,5 +75,5 @@ jobs:
           toolchain: stable
           override: true
       - run: npm install wasm-pack
-      - run: cd gauge-tests && npm install @getgauge/cli taiko && npx gauge run specs
+      - run: cd gauge-tests && npm install @getgauge/cli taiko && headless_chrome=true npx gauge run specs
       - run: ./run-em.sh
