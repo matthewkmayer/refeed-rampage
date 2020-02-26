@@ -1,5 +1,7 @@
 #!/bin/sh
 
+npx gauge run gauge-tests/specs # temp
+
 # compile things
 (cd backend && cargo build)
 (cd frontend && cargo build && npx wasm-pack build  --target web --out-name package --dev)
@@ -9,7 +11,7 @@
 # wait for services to come up: curl in a loop?
 echo "\n\nwaiting is the hardest part\n\n"
 sleep 5
-(cd gauge-tests && npx gauge run specs)
+npx gauge run gauge-tests/specs
 
 # kill remaining cargo processes
 killall cargo-make
