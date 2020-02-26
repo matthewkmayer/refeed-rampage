@@ -9,9 +9,13 @@
 # wait for services to come up: curl in a loop?
 echo "\n\nwaiting is the hardest part\n\n"
 sleep 5
-$TEST_OUT=`npx gauge run gauge-tests/specs`
-echo "$TEST_OUT is:"
-echo $TEST_OUT
+
+if r=npx gauge run gauge-tests/specs; then
+    # Success.
+    echo "woo r is $r"
+else
+    echo "nooooo r is $r"
+fi
 
 # kill remaining cargo processes
 killall cargo-make
@@ -19,4 +23,4 @@ killall backend
 docker kill rrampage
 docker rm rrampage
 
-exit $TEST_OUT
+exit $r
