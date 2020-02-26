@@ -74,4 +74,5 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - run: cargo install --force cargo-make
       - run: ./run-em.sh

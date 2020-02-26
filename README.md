@@ -32,3 +32,9 @@ I am not planning on:
 7. How to deploy? ECS Fargate is serverless ;)
 8. Backing data stores? DynamoDB?
 9. TLS via a load balancer or Let's Encrypt?
+
+(other rando notes that should probably be github issues:
+* Use microserver docker container instead of building it
+* Can we skip install `cargo make`?
+* Cache the build results between runs if they haven't changed?
+)
