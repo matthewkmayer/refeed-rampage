@@ -104,9 +104,11 @@ async fn update_meal(i: i32, create: Meal, db: Db) -> Result<impl warp::Reply, I
             *a = create
         }
     } else {
-        return Ok(StatusCode::BAD_REQUEST);
+        let r = warp::reply::json(&());
+        return Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST));
     }
-    Ok(StatusCode::NO_CONTENT)
+    let json = warp::reply::json(fake_db.get(&i).unwrap());
+    Ok(warp::reply::with_status(json, StatusCode::ACCEPTED))
 }
 
 async fn all_meals(db: Db) -> Result<impl warp::Reply, Infallible> {
