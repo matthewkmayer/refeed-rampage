@@ -71,6 +71,7 @@ struct MealDeletedResponse {}
 // Update
 #[derive(Clone, Debug)]
 enum Msg {
+    EditMeal { meal_id: i32 },
     FetchData { meal_id: Option<i32> },
     MealsFetched(fetch::ResponseDataResult<MealMap>),
     MealFetched(fetch::ResponseDataResult<Meal>),
@@ -88,6 +89,11 @@ enum Msg {
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     // log!("updating, msg is {:?}", msg);
     match msg {
+        Msg::EditMeal { meal_id: id } => {
+            log!("editing a meal");
+            orders.skip().perform_cmd(fetch_meal(id));
+            log!("and done fetching");
+        },
         Msg::MealDeleted(_) => {
             log!("deleted!");
             orders.send_msg(Msg::ChangePage(Pages::Meals { meal_id: None }));
@@ -169,6 +175,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             if let Pages::Meals { meal_id } = page {
                 orders.send_msg(Msg::FetchData { meal_id });
             }
+            if let Pages::EditMeal { meal_id } = page {
+                orders.send_msg(Msg::FetchData { meal_id: Some(meal_id) });
+            }
             model.page = page;
         }
     }
@@ -179,9 +188,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 fn view(model: &Model) -> impl View<Msg> {
     let page_contents = match model.page {
         Pages::Home => home(),
-        Pages::EditMeal { meal_id } => {
+        Pages::EditMeal { .. } => {
             // load up edit meal page for the specified meal
-            vec![p![format!("editing {}", meal_id)]]
+            create_meal_view(model)
         }
         Pages::CreateMeal => create_meal_view(model),
         Pages::Login => vec![
@@ -219,8 +228,12 @@ fn view(model: &Model) -> impl View<Msg> {
 }
 
 fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
+    let new_one = match model.page {
+        Pages::CreateMeal => h2!["Creating a new one"],
+        _ => h2!["Editing meal"],
+    };
     vec![
-        h2!["creating a new one"],
+        new_one,
         p![],
         form![
             div![
@@ -378,6 +391,7 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
                 th![
                     class!["col-1"],
                     div![button![
+                        simple_ev(Ev::Click, Msg::EditMeal { meal_id: m.id }),
                         attrs! {At::Href => format!("/meals/{}/edit", m.id)},
                         "✏️"
                     ]]
