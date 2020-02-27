@@ -18,6 +18,7 @@ struct Model {
 enum Pages {
     Home,
     Meals { meal_id: Option<i32> },
+    EditMeal { meal_id: i32 },
     CreateMeal,
     Login,
 }
@@ -178,6 +179,10 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 fn view(model: &Model) -> impl View<Msg> {
     let page_contents = match model.page {
         Pages::Home => home(),
+        Pages::EditMeal { meal_id } => {
+            // load up edit meal page for the specified meal
+            vec![p![format!("editing {}", meal_id)]]
+        }
         Pages::CreateMeal => create_meal_view(model),
         Pages::Login => vec![
             h2!["login"],
@@ -297,7 +302,7 @@ fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
             button!["Login", attrs! {At::Href => "/login"},],
         ],
         // match Meals with a specific meal specific or all meals:
-        Pages::Meals { .. } | Pages::CreateMeal => vec![
+        Pages::Meals { .. } | Pages::CreateMeal | Pages::EditMeal { .. } => vec![
             ul![
                 class!["navbar-nav mr-auto"],
                 li![
@@ -364,7 +369,6 @@ fn meal_item(m: &Meal) -> Node<Msg> {
     ]
 }
 
-
 fn meal_list(model: &Model) -> Vec<Node<Msg>> {
     let bodies: Vec<Node<Msg>> = model
         .meals
@@ -389,39 +393,9 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
         thead![tr![th![], th![class!["col-2"], "name"], th!["description"],]],
         tbody![bodies,]
     ];
-    let b = p![button![
-                attrs! {At::Href => "/meals/create"},
-                "➕"
-            ]];
+    let b = p![button![attrs! {At::Href => "/meals/create"}, "➕"]];
     vec![l, b]
 }
-
-// fn meal_list(model: &Model) -> Vec<Node<Msg>> {
-//     let mut m = match &model.error {
-//         Some(e) => vec![
-//             h2!["Couldn't fetch requested data. :("],
-//             p![],
-//             p!["nerdy reasons: ", e],
-//         ],
-//         None => model
-//             .meals
-//             .iter()
-//             .map(|m| {
-//                 h4![a![
-//                     format!("{:?}", m),
-//                     attrs! {At::Href => format!("/meals/{}", m.id)},
-//                 ]]
-//             })
-//             .collect(),
-//     };
-
-//     m.push(button![
-//         attrs! {At::Href => "/meals/create"},
-//         "add a new one"
-//     ]);
-//     m.push(p![]);
-//     m
-// }
 
 // https://seed-rs.org/guide/http-requests-and-state
 
@@ -463,6 +437,19 @@ fn routes(url: Url) -> Option<Msg> {
             Some(page) => {
                 if page == &"create" {
                     return Some(Msg::ChangePage(Pages::CreateMeal));
+                }
+                if page == &"edit" {
+                    match url.path.get(2).as_ref() {
+                        Some(mid) => match mid.parse::<i32>() {
+                            Ok(i) => {
+                                return Some(Msg::ChangePage(Pages::EditMeal { meal_id: i }));
+                            }
+                            Err(_) => {
+                                return Some(Msg::ChangePage(Pages::Meals { meal_id: None }));
+                            }
+                        },
+                        None => return Some(Msg::ChangePage(Pages::Meals { meal_id: None })),
+                    }
                 }
                 match page.parse::<i32>() {
                     Ok(m_id) => Msg::ChangePage(Pages::Meals {
