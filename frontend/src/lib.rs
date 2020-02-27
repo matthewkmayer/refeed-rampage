@@ -93,7 +93,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!("editing a meal");
             orders.skip().perform_cmd(fetch_meal(id));
             log!("and done fetching");
-        },
+        }
         Msg::MealDeleted(_) => {
             log!("deleted!");
             orders.send_msg(Msg::ChangePage(Pages::Meals { meal_id: None }));
@@ -176,7 +176,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 orders.send_msg(Msg::FetchData { meal_id });
             }
             if let Pages::EditMeal { meal_id } = page {
-                orders.send_msg(Msg::FetchData { meal_id: Some(meal_id) });
+                orders.send_msg(Msg::FetchData {
+                    meal_id: Some(meal_id),
+                });
             }
             model.page = page;
         }
