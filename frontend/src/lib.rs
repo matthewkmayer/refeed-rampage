@@ -92,11 +92,11 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::SaveMeal(meal) => {
             log!("updating existing meal");
-            if model.meal_ready_to_submit() {
+            if meal.ready_to_submit() {
                 log!("ready to submit!");
                 orders.skip().perform_cmd(update_meal(meal));
             } else {
-                log!("error before submission");
+                log!("error before save submission");
                 model.error = Some("provide a meal first".to_string());
                 orders.send_msg(Msg::MealValidationError);
             }
@@ -261,10 +261,10 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
                     label![attrs! {At::For => "mealname"}, "Meal name",],
                     input![
                         class!["form-control"],
-                        attrs! {At::Type => "text", At::Placeholder => "name" },
+                        // need to set value to model meal name on first load then use meal under construction
+                        attrs! {At::Type => "text", At::Placeholder => "name", At::Value => model.meal.name },
                         id!["mealname"],
                         input_ev(Ev::Input, Msg::MealCreateUpdateName),
-                        model.meal.name,
                     ],
                 ],
             ],
@@ -291,7 +291,12 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
                 if model.page == Pages::CreateMeal {
                     Msg::CreateNewMeal(model.meal_under_construction.clone())
                 } else {
-                    Msg::SaveMeal(model.meal_under_construction.clone())
+                    let mut m = model.meal_under_construction.clone();
+                    match model.page {
+                        Pages::EditMeal { meal_id } => m.id = meal_id,
+                        _ => (),
+                    }
+                    Msg::SaveMeal(m)
                 }
             )
         ],
@@ -479,7 +484,7 @@ fn routes(url: Url) -> Option<Msg> {
     if url.path.is_empty() {
         return Some(Msg::ChangePage(Pages::Home));
     }
-    log!("url path is {}", url.path);
+    // log!("url path is {}", url.path);
     Some(match url.path[0].as_ref() {
         "meals" => match url.path.get(1).as_ref() {
             Some(page) => {
@@ -558,4 +563,14 @@ struct Meal {
     id: i32,
     photos: Option<String>,
     description: String,
+}
+
+impl Meal {
+    fn ready_to_submit(&self) -> bool {
+        log!("self is {:?}", self);
+        if self.description.is_empty() || self.name.is_empty() {
+            return false;
+        }
+        true
+    }
 }
