@@ -199,7 +199,7 @@ fn view(model: &Model) -> impl View<Msg> {
                 let mut c = meal_list(model);
                 c.push(button![
                     simple_ev(Ev::Click, Msg::FetchData { meal_id: None }),
-                    "get all meals"
+                    "🔄"
                 ]);
                 c
             }
@@ -364,32 +364,64 @@ fn meal_item(m: &Meal) -> Node<Msg> {
     ]
 }
 
-fn meal_list(model: &Model) -> Vec<Node<Msg>> {
-    let mut m = match &model.error {
-        Some(e) => vec![
-            h2!["Couldn't fetch requested data. :("],
-            p![],
-            p!["nerdy reasons: ", e],
-        ],
-        None => model
-            .meals
-            .iter()
-            .map(|m| {
-                h4![a![
-                    format!("{:?}", m),
-                    attrs! {At::Href => format!("/meals/{}", m.id)},
-                ]]
-            })
-            .collect(),
-    };
 
-    m.push(button![
-        attrs! {At::Href => "/meals/create"},
-        "add a new one"
-    ]);
-    m.push(p![]);
-    m
+fn meal_list(model: &Model) -> Vec<Node<Msg>> {
+    let bodies: Vec<Node<Msg>> = model
+        .meals
+        .iter()
+        .map(|m| {
+            tr![
+                th![
+                    class!["col-1"],
+                    div![button![
+                        attrs! {At::Href => format!("/meals/{}/edit", m.id)},
+                        "✏️"
+                    ]]
+                ],
+                td![m.name],
+                td![m.description]
+            ]
+        })
+        .collect();
+
+    let l = table![
+        class!["table table-striped table-sm"],
+        thead![tr![th![], th![class!["col-2"], "name"], th!["description"],]],
+        tbody![bodies,]
+    ];
+    let b = p![button![
+                attrs! {At::Href => "/meals/create"},
+                "➕"
+            ]];
+    vec![l, b]
 }
+
+// fn meal_list(model: &Model) -> Vec<Node<Msg>> {
+//     let mut m = match &model.error {
+//         Some(e) => vec![
+//             h2!["Couldn't fetch requested data. :("],
+//             p![],
+//             p!["nerdy reasons: ", e],
+//         ],
+//         None => model
+//             .meals
+//             .iter()
+//             .map(|m| {
+//                 h4![a![
+//                     format!("{:?}", m),
+//                     attrs! {At::Href => format!("/meals/{}", m.id)},
+//                 ]]
+//             })
+//             .collect(),
+//     };
+
+//     m.push(button![
+//         attrs! {At::Href => "/meals/create"},
+//         "add a new one"
+//     ]);
+//     m.push(p![]);
+//     m
+// }
 
 // https://seed-rs.org/guide/http-requests-and-state
 
