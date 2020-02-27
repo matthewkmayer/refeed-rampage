@@ -439,17 +439,21 @@ fn routes(url: Url) -> Option<Msg> {
                     return Some(Msg::ChangePage(Pages::CreateMeal));
                 }
                 match page.parse::<i32>() {
-                    Ok(m_id) => {
-                        match url.path.get(2).as_ref() {
-                            Some(i) => {
-                                if i == &"edit" {
-                                    return Some(Msg::ChangePage(Pages::EditMeal {meal_id: m_id}));
-                                }
-                                return Some(Msg::ChangePage(Pages::Meals {meal_id: Some(m_id)}));
+                    Ok(m_id) => match url.path.get(2).as_ref() {
+                        Some(i) => {
+                            if i == &"edit" {
+                                return Some(Msg::ChangePage(Pages::EditMeal { meal_id: m_id }));
                             }
-                            None => return Some(Msg::ChangePage(Pages::Meals {meal_id: Some(m_id)})),
+                            return Some(Msg::ChangePage(Pages::Meals {
+                                meal_id: Some(m_id),
+                            }));
                         }
-                    }
+                        None => {
+                            return Some(Msg::ChangePage(Pages::Meals {
+                                meal_id: Some(m_id),
+                            }))
+                        }
+                    },
                     Err(e) => {
                         log!("Got an error on meal id: {}", e);
                         return Some(Msg::ChangePage(Pages::Meals { meal_id: None }));
