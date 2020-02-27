@@ -13,6 +13,6 @@ Tests for refeed rampage's frontend. End to end tests until a stubbed backend is
 
 * Goto refeed rampage home
 * Click "Meals"
-* Click "add a new one"
+* Click "➕"
 * Fill out wings as a new meal
 * Page contains "wings"
