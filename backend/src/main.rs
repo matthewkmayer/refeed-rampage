@@ -18,7 +18,7 @@ async fn main() {
     let cors = warp::cors()
         .allow_origin("http://localhost:8080")
         .allow_origin("http://127.0.0.1:8080")
-        .allow_methods(vec!["GET", "POST", "DELETE"])
+        .allow_methods(vec!["GET", "POST", "DELETE", "PUT"])
         .allow_headers(vec!["content-type"]);
 
     let routes = meal_filters(fake_db.clone())
@@ -34,7 +34,8 @@ fn meal_filters(
     a_meal_filter(db.clone())
         .or(all_meal_filter(db.clone()))
         .or(meal_create(db.clone()))
-        .or(meal_delete(db))
+        .or(meal_delete(db.clone()))
+        .or(meal_update(db))
 }
 
 fn a_meal_filter(
@@ -70,6 +71,14 @@ fn meal_delete(ds: Db) -> impl Filter<Extract = impl warp::Reply, Error = warp::
         .and_then(delete_meal)
 }
 
+fn meal_update(ds: Db) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("meals" / i32)
+        .and(warp::put())
+        .and(json_body())
+        .and(with_db(ds))
+        .and_then(update_meal)
+}
+
 // curl -i -X DELETE http://localhost:3030/meals/1
 async fn delete_meal(i: i32, db: Db) -> Result<impl warp::Reply, Infallible> {
     let mut fake_db = db.lock().await;
@@ -86,6 +95,18 @@ async fn specific_meal(i: i32, db: Db) -> Result<impl warp::Reply, Infallible> {
     // TODO: figure out why logging doesn't work as I expected it to
     log::info!("ds is {:?}", db);
     Ok(warp::reply::json(&fake_db.get_key_value(&i).unwrap().1))
+}
+
+async fn update_meal(i: i32, create: Meal, db: Db) -> Result<impl warp::Reply, Infallible> {
+    let mut fake_db = db.lock().await;
+    if fake_db.contains_key(&i) {
+        if let Some(a) = fake_db.get_mut(&i) {
+            *a = create
+        }
+    } else {
+        return Ok(StatusCode::BAD_REQUEST);
+    }
+    Ok(StatusCode::NO_CONTENT)
 }
 
 async fn all_meals(db: Db) -> Result<impl warp::Reply, Infallible> {

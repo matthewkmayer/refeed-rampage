@@ -79,6 +79,7 @@ enum Msg {
     MealCreateUpdateName(String),
     MealCreateUpdateDescription(String),
     CreateNewMeal(Meal),
+    SaveMeal(Meal),
     MealValidationError,
     MealCreated(seed::fetch::ResponseDataResult<MealCreatedResponse>),
     DeleteMeal { meal_id: i32 },
@@ -89,6 +90,17 @@ enum Msg {
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     // log!("updating, msg is {:?}", msg);
     match msg {
+        Msg::SaveMeal(meal) => {
+            log!("updating existing meal");
+            if model.meal_ready_to_submit() {
+                log!("ready to submit!");
+                orders.skip().perform_cmd(update_meal(meal));
+            } else {
+                log!("error before submission");
+                model.error = Some("provide a meal first".to_string());
+                orders.send_msg(Msg::MealValidationError);
+            }
+        }
         Msg::EditMeal { meal_id: id } => {
             log!("editing a meal");
             orders.skip().perform_cmd(fetch_meal(id));
@@ -230,6 +242,10 @@ fn view(model: &Model) -> impl View<Msg> {
 }
 
 fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
+    let submit_text = match model.page {
+        Pages::CreateMeal => "make it",
+        _ => "save it",
+    };
     let new_one = match model.page {
         Pages::CreateMeal => h2!["Creating a new one"],
         _ => h2!["Editing meal"],
@@ -248,6 +264,7 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
                         attrs! {At::Type => "text", At::Placeholder => "name" },
                         id!["mealname"],
                         input_ev(Ev::Input, Msg::MealCreateUpdateName),
+                        model.meal.name,
                     ],
                 ],
             ],
@@ -261,16 +278,21 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
                         attrs! {At::Type => "text", At::Placeholder => "Meal description" },
                         id!["mdesc"],
                         input_ev(Ev::Input, Msg::MealCreateUpdateDescription),
+                        model.meal.description,
                     ],
                 ],
             ],
         ],
         button![
             class!["btn btn-primary"],
-            "make it",
+            submit_text,
             simple_ev(
                 Ev::Click,
-                Msg::CreateNewMeal(model.meal_under_construction.clone())
+                if model.page == Pages::CreateMeal {
+                    Msg::CreateNewMeal(model.meal_under_construction.clone())
+                } else {
+                    Msg::SaveMeal(model.meal_under_construction.clone())
+                }
             )
         ],
         match &model.error {
@@ -433,6 +455,16 @@ async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
     log!(format!("Sending something to {}", url));
     Request::new(url)
         .method(Method::Post)
+        .send_json(&meal)
+        .fetch_json_data(Msg::MealCreated)
+        .await
+}
+
+async fn update_meal(meal: Meal) -> Result<Msg, Msg> {
+    let url = format!("http://127.0.0.1:3030/meals/{}", meal.id);
+    log!(format!("Sending something to {}", url));
+    Request::new(url)
+        .method(Method::Put)
         .send_json(&meal)
         .fetch_json_data(Msg::MealCreated)
         .await
