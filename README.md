@@ -23,12 +23,3 @@ I am not planning on:
 * providing support for anyone else using this
 * making this Amazon scale production ready
 
-## Plans
-
-(deleted as we move along)
-
-5. Frontend CRUD operations
-6. Authentication?
-7. How to deploy? ECS Fargate is serverless ;)
-8. Backing data stores? DynamoDB?
-9. TLS via a load balancer or Let's Encrypt?
