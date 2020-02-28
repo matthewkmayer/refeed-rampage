@@ -5,7 +5,7 @@ name: Build
 
 jobs:
   test:
-    name: Test Suite
+    name: Unit tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -64,3 +64,17 @@ jobs:
       - run: ./run-em.sh
       - run: cd gauge-tests && npm install @getgauge/cli taiko && headless_chrome=true npx gauge run specs
       - run: ./shut-em-down.sh # is this needed or will the build service clean up the entire VM?
+
+  cuke-tests:
+    name: cuke tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: cd backend && cargo build
+      - run: ./run-em-for-cukes.sh
+      - run: cargo test --test cucumber

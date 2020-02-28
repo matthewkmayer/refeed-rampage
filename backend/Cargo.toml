@@ -21,3 +21,4 @@ harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
 cucumber = { package = "cucumber_rust", version = "^0.6.0" } 
+reqwest = { version = "0.10", features = ["blocking", "json"] }
