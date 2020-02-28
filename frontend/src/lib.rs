@@ -292,9 +292,8 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
                     Msg::CreateNewMeal(model.meal_under_construction.clone())
                 } else {
                     let mut m = model.meal_under_construction.clone();
-                    match model.page {
-                        Pages::EditMeal { meal_id } => m.id = meal_id,
-                        _ => (),
+                    if let Pages::EditMeal { meal_id } = model.page {
+                        m.id = meal_id
                     }
                     Msg::SaveMeal(m)
                 }
