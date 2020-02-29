@@ -14,11 +14,6 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - name: Cache cargo registry
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
       - run: rustup component add rustfmt
       - uses: actions-rs/cargo@v1
         with:
@@ -51,6 +46,11 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
       - run: npm install wasm-pack
       - run: ./run-em.sh
       - run: cd gauge-tests && npm install @getgauge/cli taiko && headless_chrome=true npx gauge run specs
