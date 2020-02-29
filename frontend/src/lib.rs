@@ -17,7 +17,8 @@ struct Model {
 #[derive(Clone, Debug, PartialEq)]
 enum Pages {
     Home,
-    Meals { meal_id: Option<i32> },
+    Meals,
+    ViewSpecificMeal { meal_id: i32 },
     EditMeal { meal_id: i32 },
     CreateMeal,
     Login,
@@ -108,7 +109,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         }
         Msg::MealDeleted(_) => {
             log!("deleted!");
-            orders.send_msg(Msg::ChangePage(Pages::Meals { meal_id: None }));
+            orders.send_msg(Msg::ChangePage(Pages::Meals));
         }
         Msg::DeleteMeal { meal_id: id } => {
             orders.skip().perform_cmd(delete_meal(id));
@@ -145,7 +146,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::MealCreated(Ok(m)) => {
             log!("m is {:?}", m);
             model.error = None;
-            orders.send_msg(Msg::ChangePage(Pages::Meals { meal_id: None }));
+            orders.send_msg(Msg::ChangePage(Pages::Meals));
         }
         Msg::MealCreated(Err(fail_reason)) => {
             log!(format!("sad times: {:?}", fail_reason));
@@ -158,12 +159,13 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             };
         }
         Msg::MealsFetched(Ok(meals)) => {
+            log!("hey it worked");
             model.meals = meals;
             model.error = None;
         }
         Msg::MealsFetched(Err(fail_reason)) => {
             // 404 should go to 404 page
-            log!("error: {:#?}", fail_reason);
+            log!(format!("error fetchin' meal: {:#?}", fail_reason));
             error!(format!(
                 "Fetch error - Sending message failed - {:#?}",
                 fail_reason
@@ -184,8 +186,13 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             model.error = Some(format!("Error fetching meal: {:?}", fail_reason));
         }
         Msg::ChangePage(page) => {
-            if let Pages::Meals { meal_id } = page {
-                orders.send_msg(Msg::FetchData { meal_id });
+            if let Pages::ViewSpecificMeal { meal_id } = page {
+                orders.send_msg(Msg::FetchData {
+                    meal_id: Some(meal_id),
+                });
+            }
+            if let Pages::Meals = page {
+                orders.send_msg(Msg::FetchData { meal_id: None });
             }
             if let Pages::EditMeal { meal_id } = page {
                 orders.send_msg(Msg::FetchData {
@@ -212,26 +219,29 @@ fn view(model: &Model) -> impl View<Msg> {
             p![],
             p!["This will have authentication sometime."],
         ],
-        Pages::Meals { meal_id } => match meal_id {
-            Some(_) => {
-                log!("meal id specific");
-                let mut c = vec![meal_item(&model.meal)];
-                c.push(button![
-                    simple_ev(Ev::Click, Msg::FetchData { meal_id: meal_id }),
-                    "refresh this item"
-                ]);
-                c
-            }
-            None => {
-                log!("no meal id specific, show them all");
-                let mut c = meal_list(model);
-                c.push(button![
-                    simple_ev(Ev::Click, Msg::FetchData { meal_id: None }),
-                    "🔄"
-                ]);
-                c
-            }
-        },
+        Pages::Meals => {
+            log!("no meal id specific, show them all");
+            let mut c = meal_list(model);
+            c.push(button![
+                simple_ev(Ev::Click, Msg::FetchData { meal_id: None }),
+                "🔄"
+            ]);
+            c
+        }
+        Pages::ViewSpecificMeal { meal_id } => {
+            log!("meal id specific");
+            let mut c = vec![meal_item(&model.meal)];
+            c.push(button![
+                simple_ev(
+                    Ev::Click,
+                    Msg::FetchData {
+                        meal_id: Some(meal_id)
+                    }
+                ),
+                "refresh this item"
+            ]);
+            c
+        }
     };
     let main = main![
         class!["container"],
@@ -344,9 +354,10 @@ fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
             li![
                 class![{
                     match model.page {
-                        Pages::Meals { .. } | Pages::CreateMeal | Pages::EditMeal { .. } => {
-                            "nav-item active"
-                        }
+                        Pages::Meals { .. }
+                        | Pages::CreateMeal
+                        | Pages::EditMeal { .. }
+                        | Pages::ViewSpecificMeal { .. } => "nav-item active",
                         _ => "nav-item",
                     }
                 }],
@@ -354,8 +365,10 @@ fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
                     "Meals",
                     class!["nav-link"],
                     match model.page {
-                        Pages::Meals { .. } | Pages::CreateMeal | Pages::EditMeal { .. } =>
-                            span![class!["sr-only"], "(current)"],
+                        Pages::Meals { .. }
+                        | Pages::CreateMeal
+                        | Pages::EditMeal { .. }
+                        | Pages::ViewSpecificMeal { .. } => span![class!["sr-only"], "(current)"],
                         _ => empty![],
                     },
                     attrs! {At::Href => "/meals"}
@@ -479,23 +492,21 @@ fn routes(url: Url) -> Option<Msg> {
                             if i == &"edit" {
                                 return Some(Msg::ChangePage(Pages::EditMeal { meal_id: m_id }));
                             }
-                            return Some(Msg::ChangePage(Pages::Meals {
-                                meal_id: Some(m_id),
+                            return Some(Msg::ChangePage(Pages::ViewSpecificMeal {
+                                meal_id: m_id,
                             }));
                         }
                         None => {
-                            return Some(Msg::ChangePage(Pages::Meals {
-                                meal_id: Some(m_id),
-                            }))
+                            return Some(Msg::ChangePage(Pages::ViewSpecificMeal { meal_id: m_id }))
                         }
                     },
                     Err(e) => {
                         log!("Got an error on meal id: {}", e);
-                        return Some(Msg::ChangePage(Pages::Meals { meal_id: None }));
+                        return Some(Msg::ChangePage(Pages::Meals));
                     }
                 }
             }
-            None => Msg::ChangePage(Pages::Meals { meal_id: None }),
+            None => Msg::ChangePage(Pages::Meals),
         },
         "login" => Msg::ChangePage(Pages::Login),
         _ => Msg::ChangePage(Pages::Home),
@@ -523,13 +534,17 @@ fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
             Some(page) => match page.as_ref() {
                 "create" => Pages::CreateMeal,
                 _ => match page.parse::<i32>() {
-                    Ok(m_id) => Pages::Meals {
-                        meal_id: Some(m_id),
+                    Ok(m_id) => match url.path.get(2).as_ref() {
+                        Some(i) => match i.as_ref() {
+                            "edit" => Pages::EditMeal { meal_id: m_id },
+                            _ => Pages::ViewSpecificMeal { meal_id: m_id },
+                        },
+                        None => Pages::ViewSpecificMeal { meal_id: m_id },
                     },
-                    Err(_) => Pages::Meals { meal_id: None },
+                    Err(_) => Pages::Meals,
                 },
             },
-            None => Pages::Meals { meal_id: None },
+            None => Pages::Meals,
         },
         "login" => Pages::Login,
         _ => Pages::Home,
