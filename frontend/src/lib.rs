@@ -72,24 +72,28 @@ struct MealDeletedResponse {}
 // Update
 #[derive(Clone, Debug)]
 enum Msg {
+    // editing
     EditMeal { meal_id: i32 },
-    FetchData { meal_id: Option<i32> },
-    MealsFetched(fetch::ResponseDataResult<MealMap>),
-    MealFetched(fetch::ResponseDataResult<Meal>),
-    ChangePage(Pages),
     MealCreateUpdateName(String),
     MealCreateUpdateDescription(String),
     CreateNewMeal(Meal),
     SaveMeal(Meal),
     MealValidationError,
     MealCreated(seed::fetch::ResponseDataResult<MealCreatedResponse>),
+    // deleting
     DeleteMeal { meal_id: i32 },
     MealDeleted(seed::fetch::ResponseDataResult<MealDeletedResponse>),
+    // changing page
+    ChangePage(Pages),
+    // fetching etc
+    FetchData { meal_id: Option<i32> },
+    MealsFetched(fetch::ResponseDataResult<MealMap>),
+    MealFetched(fetch::ResponseDataResult<Meal>),
 }
 
 /// How we update the model
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
-    // log!("updating, msg is {:?}", msg);
+    // TODO: move these around to group like things together
     match msg {
         Msg::SaveMeal(meal) => {
             log!("updating existing meal");
