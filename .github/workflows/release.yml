@@ -7,7 +7,7 @@ on:
 name: Release Build
 
 jobs:
-  release-backend-build:
+  - release-backend-build:
     name: release-backend-build
     runs-on: ubuntu-latest
     steps:
@@ -18,3 +18,16 @@ jobs:
           toolchain: stable
           override: true
       - run: cd backend && cargo build --release
+      - run: echo "Would have deployed backend"
+  - release-frontend-build:
+    name: release-frontend-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: cd frontend && cargo build --release && npx wasm-pack build  --target web --out-name package
+      - run: echo "Would have deployed frontend"
