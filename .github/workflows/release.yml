@@ -7,7 +7,7 @@ on:
 name: Release Build
 
 jobs:
-  - release-backend-build:
+  release-backend-build:
     name: release-backend-build
     runs-on: ubuntu-latest
     steps:
@@ -19,7 +19,7 @@ jobs:
           override: true
       - run: cd backend && cargo build --release
       - run: echo "Would have deployed backend"
-  - release-frontend-build:
+  release-frontend-build:
     name: release-frontend-build
     runs-on: ubuntu-latest
     steps:
