@@ -175,6 +175,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::MealFetched(Ok(meal)) => {
             model.meals = vec![];
             model.meal = meal;
+            model.meal_under_construction = model.meal.clone();
             model.error = None;
         }
         Msg::MealFetched(Err(fail_reason)) => {
@@ -198,6 +199,15 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 orders.send_msg(Msg::FetchData {
                     meal_id: Some(meal_id),
                 });
+            }
+            // Clears out any meal under construction if we're gonna make a new one
+            if let Pages::CreateMeal = page {
+                model.meal_under_construction = Meal {
+                    name: "".to_string(),
+                    description: "".to_string(),
+                    id: 0,
+                    photos: None,
+                };
             }
             model.page = page;
         }
@@ -272,7 +282,7 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
                     input![
                         class!["form-control"],
                         // need to set value to model meal name on first load then use meal under construction
-                        attrs! {At::Type => "text", At::Placeholder => "name", At::Value => model.meal.name },
+                        attrs! {At::Type => "text", At::Placeholder => "name", At::Value => model.meal_under_construction.name },
                         id!["mealname"],
                         input_ev(Ev::Input, Msg::MealCreateUpdateName),
                     ],
@@ -288,7 +298,7 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
                         attrs! {At::Type => "text", At::Placeholder => "Meal description" },
                         id!["mdesc"],
                         input_ev(Ev::Input, Msg::MealCreateUpdateDescription),
-                        model.meal.description,
+                        model.meal_under_construction.description,
                     ],
                 ],
             ],
