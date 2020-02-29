@@ -320,67 +320,50 @@ fn home() -> Vec<Node<Msg>> {
     vec![header, contents]
 }
 
-// this got wet in a hurry, how can we DRY it out?
 fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
-    match model.page {
-        Pages::Home => vec![
-            ul![
-                class!["navbar-nav mr-auto"],
-                li![
-                    class!["nav-item active"],
-                    a![
-                        "Home",
-                        class!["nav-link"],
-                        span![class!["sr-only"], "(current)"],
-                        attrs! {At::Href => "/"}
-                    ]
-                ],
-                li![
-                    class!["nav-item"],
-                    a!["Meals", class!["nav-link"], attrs! {At::Href => "/meals"}]
+    vec![
+        ul![
+            class!["navbar-nav mr-auto"],
+            li![
+                class![{
+                    match model.page {
+                        Pages::Home => "nav-item active",
+                        _ => "nav-item",
+                    }
+                }],
+                a![
+                    "Home",
+                    class!["nav-link"],
+                    match model.page {
+                        Pages::Home => span![class!["sr-only"], "(current)"],
+                        _ => empty![],
+                    },
+                    attrs! {At::Href => "/"},
                 ]
             ],
-            button!["Login", attrs! {At::Href => "/login"},],
-        ],
-        // match Meals with a specific meal specific or all meals:
-        Pages::Meals { .. } | Pages::CreateMeal | Pages::EditMeal { .. } => vec![
-            ul![
-                class!["navbar-nav mr-auto"],
-                li![
-                    class!["nav-item"],
-                    a!["Home", class!["nav-link"], attrs! {At::Href => "/"}]
-                ],
-                li![
-                    class!["nav-item active"],
-                    a![
-                        "Meals",
-                        class!["nav-link"],
-                        span![class!["sr-only"], "(current)"],
-                        attrs! {At::Href => "/meals"}
-                    ]
+            li![
+                class![{
+                    match model.page {
+                        Pages::Meals { .. } | Pages::CreateMeal | Pages::EditMeal { .. } => {
+                            "nav-item active"
+                        }
+                        _ => "nav-item",
+                    }
+                }],
+                a![
+                    "Meals",
+                    class!["nav-link"],
+                    match model.page {
+                        Pages::Meals { .. } | Pages::CreateMeal | Pages::EditMeal { .. } =>
+                            span![class!["sr-only"], "(current)"],
+                        _ => empty![],
+                    },
+                    attrs! {At::Href => "/meals"}
                 ]
-            ],
-            button!["Login", attrs! {At::Href => "/login"},],
+            ]
         ],
-        Pages::Login => vec![
-            ul![
-                class!["navbar-nav mr-auto"],
-                li![
-                    class!["nav-item"],
-                    a!["Home", class!["nav-link"], attrs! {At::Href => "/"}]
-                ],
-                li![
-                    class!["nav-item"],
-                    a!["Meals", class!["nav-link"], attrs! {At::Href => "/meals"}]
-                ]
-            ],
-            button![
-                "Login",
-                attrs! {At::Href => "/login"},
-                span![class!["sr-only"], "(current)"],
-            ],
-        ],
-    }
+        button!["Login", attrs! {At::Href => "/login"},],
+    ]
 }
 
 fn nav(model: &Model) -> Node<Msg> {
