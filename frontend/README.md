@@ -9,3 +9,8 @@ In one window run the `cargo make build frontend` command to keep rebuilding cha
 Docker:
 
 `docker build -t my-service:local .` and `docker run -p 9090:9090 my-service:local` .
+
+## publishing to github pages:
+
+`$ cp index.html ../docs/`
+`$ cp -r pkg ../docs`
