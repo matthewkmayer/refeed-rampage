@@ -64,3 +64,15 @@ jobs:
       - run: cd backend && cargo build
       - run: ./run-em-for-cukes.sh
       - run: cargo test --test cucumber
+
+  release-backend-build: # how can we make this work only  on tags?
+    name: release-backend-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: cd backend && cargo build --release
