@@ -240,6 +240,14 @@ fn view(model: &Model) -> impl View<Msg> {
                 simple_ev(Ev::Click, Msg::FetchData { meal_id: None }),
                 "🔄"
             ]);
+            match &model.error {
+                Some(e) => {
+                    c.push(p![]);
+                    c.push(h3!["Couldn't get those delicious meals:"]);
+                    c.push(p![e]);
+                }
+                None => (),
+            };
             c
         }
         Pages::ViewSpecificMeal { meal_id } => {
