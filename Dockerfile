@@ -1,10 +1,6 @@
-FROM amazonlinux:2.0.20200207.1
+FROM nginx:1.17.8-alpine
 
-RUN amazon-linux-extras install -y nginx1
-
-RUN systemctl enable nginx
-# RUN systemctl start nginx
-
-# install HTML
+ADD frontend/index.html /usr/share/nginx/html/
+ADD frontend/pkg/package* /usr/share/nginx/html/pkg/
 
 # WASM bits

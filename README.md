@@ -25,4 +25,4 @@ I am not planning on:
 
 ## Dockerfile
 
-`docker build . -t rrampage:latest`
+`$ docker build . -t rrampage && docker run --name rrampage -d -p 8080:80 rrampage`
