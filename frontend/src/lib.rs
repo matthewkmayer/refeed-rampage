@@ -411,9 +411,11 @@ fn nav(model: &Model) -> Node<Msg> {
         ],
         button![
             class!["navbar-toggler"],
-            attrs! {At::Type => "button",
-            At::Custom(std::borrow::Cow::Borrowed("data-toggle"))=>"collapse",
-            At::Custom(std::borrow::Cow::Borrowed("data-target"))=>"#navbarCollapse"},
+            attrs! {
+                At::Type => "button",
+                At::Custom(std::borrow::Cow::Borrowed("data-toggle"))=>"collapse",
+                At::Custom(std::borrow::Cow::Borrowed("data-target"))=>"#navbarCollapse"
+            },
             span![class!["navbar-toggler-icon"]],
         ],
         div![

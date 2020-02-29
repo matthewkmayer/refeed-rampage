@@ -23,3 +23,6 @@ I am not planning on:
 * providing support for anyone else using this
 * making this Amazon scale production ready
 
+## Dockerfile
+
+`docker build . -t rrampage:latest`
