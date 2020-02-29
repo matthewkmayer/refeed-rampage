@@ -403,11 +403,18 @@ fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
 
 fn nav(model: &Model) -> Node<Msg> {
     nav![
-        class!["navbar navbar-expand-md navbar-light bg-light mb-4"],
+        class!["navbar navbar-light bg-light navbar-expand-sm"],
         a![
             "refeed rampage",
             class!["navbar-brand"],
             attrs! {At::Href => "/"}
+        ],
+        button![
+            class!["navbar-toggler"],
+            attrs! {At::Type => "button",
+            At::Custom(std::borrow::Cow::Borrowed("data-toggle"))=>"collapse",
+            At::Custom(std::borrow::Cow::Borrowed("data-target"))=>"#navbarCollapse"},
+            span![class!["navbar-toggler-icon"]],
         ],
         div![
             class!["collapse navbar-collapse"],
