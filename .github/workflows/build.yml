@@ -46,11 +46,6 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - name: Cache cargo registry
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.toml') }}
       - run: npm install wasm-pack
       - run: ./run-em.sh
       - run: cd gauge-tests && npm install @getgauge/cli taiko && headless_chrome=true npx gauge run specs
@@ -70,14 +65,3 @@ jobs:
       - run: ./run-em-for-cukes.sh
       - run: cargo test --test cucumber
 
-  release-backend-build: # how can we make this work only  on tags?
-    name: release-backend-build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - run: cd backend && cargo build --release
