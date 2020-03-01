@@ -1,10 +1,10 @@
 use dynomite::{
     dynamodb::{
         AttributeDefinition, CreateTableInput, DynamoDb, DynamoDbClient, KeySchemaElement,
-        ProvisionedThroughput,
+        ProvisionedThroughput, PutItemInput,
     },
     retry::Policy,
-    Retries,
+    Item, Retries,
 };
 use rusoto_core::Region;
 use serde_derive::{Deserialize, Serialize};
@@ -201,9 +201,9 @@ async fn prepopulate_db(db: Db) {
         endpoint: "http://localhost:8000".into(),
     })
     .with_retries(Policy::default());
-    let table_name = "books".to_string();
+    let table_name = "meals".to_string();
     let create_table_req = client.create_table(CreateTableInput {
-        table_name,
+        table_name: table_name.clone(),
         key_schema: vec![KeySchemaElement {
             attribute_name: "id".into(),
             key_type: "HASH".into(),
@@ -224,18 +224,46 @@ async fn prepopulate_db(db: Db) {
         Ok(_) => debug!("All good making table"),
         Err(e) => {
             debug!("Issue creating table: {:?}", e);
-            let s = e.to_string();
-            debug!("e as string is {}", s);
             if !e.to_string().contains("preexisting table") {
                 panic!("Ran into an issue unrelated to table pre existing");
             }
         }
     }
+
+    id = Uuid::parse_str("f11b1c5e-d6d8-4dce-8a9d-9e05d870b881").unwrap();
+    let mut m = Meal {
+        id,
+        name: "Burritos".to_string(),
+        photos: None,
+        description: "Amazing burritos".to_string(),
+    };
+
+    let _ = client
+        .put_item(PutItemInput {
+            table_name: table_name.clone(),
+            item: m.clone().into(),
+            ..PutItemInput::default()
+        })
+        .sync();
+
+    m.id = Uuid::parse_str("936DA01F9ABD4d9d80C702AF85C822A8").unwrap();
+    m.name = "Pizza".to_string();
+    m.description = "Delicious pizza".to_string();
+
+    let _ = client
+        .put_item(PutItemInput {
+            table_name,
+            item: m.into(),
+            ..PutItemInput::default()
+        })
+        .sync();
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Item, Clone)]
 pub struct Meal {
+    #[dynomite(rename = "mealName")]
     name: String,
+    #[dynomite(partition_key)]
     id: Uuid,
     photos: Option<String>,
     description: String,
