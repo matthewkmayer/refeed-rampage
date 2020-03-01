@@ -194,7 +194,6 @@ async fn prepopulate_db(db: Db) {
     // ---------------------------------------------------
     // Dynamo bits:
 
-    let mut rt = Runtime::new().expect("failed to initialize futures runtime");
     // create rusoto client
     let client = DynamoDbClient::new(Region::Custom {
         name: "us-east-1".into(),
@@ -218,7 +217,8 @@ async fn prepopulate_db(db: Db) {
         }),
         ..CreateTableInput::default()
     });
-    let _ = rt.block_on(futures::compat::Compat01As03::new(create_table_req));
+    let _ = futures::compat::Compat01As03::new(create_table_req).await;
+    log::debug!("beep");
 }
 
 #[derive(Deserialize, Serialize, Debug)]
