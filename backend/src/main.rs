@@ -1,17 +1,14 @@
 use dynomite::{
     dynamodb::{
-        AttributeDefinition, CreateTableInput, DynamoDb, DynamoDbClient, GetItemInput,
-        KeySchemaElement, ProvisionedThroughput, PutItemInput,
+        AttributeDefinition, CreateTableInput, DeleteItemInput, DynamoDb, DynamoDbClient,
+        GetItemInput, KeySchemaElement, ProvisionedThroughput, PutItemInput, ScanInput,
     },
     retry::Policy,
     FromAttributes, Item, Retries,
 };
 use rusoto_core::Region;
 use serde_derive::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 use std::convert::Infallible;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 use uuid::Uuid;
 use warp::http::StatusCode;
 use warp::Filter;
@@ -78,13 +75,34 @@ fn meal_update() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reject
 
 // curl -i -X DELETE http://localhost:3030/meals/1
 async fn delete_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
-    let mut fake_db = db.lock().await;
-    if fake_db.contains_key(&i.to_string()) {
-        fake_db.remove(&i.to_string());
-    } else {
-        return Ok(StatusCode::BAD_REQUEST);
+    let client = DynamoDbClient::new(Region::Custom {
+        name: "us-east-1".into(),
+        endpoint: "http://localhost:8000".into(),
+    })
+    .with_retries(Policy::default());
+    let m = Meal {
+        id: i,
+        ..Default::default()
+    };
+
+    let del = client
+        .delete_item(DeleteItemInput {
+            table_name: "meals".to_string(),
+            key: m.key(),
+            ..DeleteItemInput::default()
+        })
+        .sync();
+
+    match del {
+        Ok(deleted_item) => {
+            info!("item got deleted {:?}", deleted_item);
+            Ok(StatusCode::NO_CONTENT)
+        }
+        Err(e) => {
+            info!("item couldn't be deleted: {:?}", e);
+            Ok(StatusCode::BAD_REQUEST)
+        }
     }
-    Ok(StatusCode::NO_CONTENT)
 }
 
 async fn specific_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
@@ -118,25 +136,60 @@ async fn specific_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
     Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST))
 }
 
-async fn update_meal(i: Uuid, create: Meal) -> Result<impl warp::Reply, Infallible> {
-    let mut fake_db = db.lock().await;
-    if fake_db.contains_key(&i.to_string()) {
-        if let Some(a) = fake_db.get_mut(&i.to_string()) {
-            *a = create
+async fn update_meal(_id: Uuid, create: Meal) -> Result<impl warp::Reply, Infallible> {
+    // make sure _id matches create.id
+    let client = DynamoDbClient::new(Region::Custom {
+        name: "us-east-1".into(),
+        endpoint: "http://localhost:8000".into(),
+    })
+    .with_retries(Policy::default());
+
+    let d_result = client
+        .put_item(PutItemInput {
+            table_name: "meals".to_string(),
+            item: create.clone().into(),
+            ..PutItemInput::default()
+        })
+        .sync();
+    match d_result {
+        Ok(_) => {
+            info!("aww yiss added it");
+            let r = warp::reply::json(&create);
+            return Ok(warp::reply::with_status(r, StatusCode::ACCEPTED));
         }
-    } else {
-        let r = warp::reply::json(&());
-        return Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST));
+        Err(e) => {
+            info!("blew up: {:?}", e);
+            let r = warp::reply::json(&());
+            return Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST));
+        }
     }
-    let json = warp::reply::json(fake_db.get(&i.to_string()).unwrap());
-    Ok(warp::reply::with_status(json, StatusCode::ACCEPTED))
 }
 
 async fn all_meals() -> Result<impl warp::Reply, Infallible> {
-    let fake_db = db.lock().await;
-    let a: Vec<&Meal> = fake_db.iter().map(|x| x.1).collect();
+    let client = DynamoDbClient::new(Region::Custom {
+        name: "us-east-1".into(),
+        endpoint: "http://localhost:8000".into(),
+    })
+    .with_retries(Policy::default());
 
-    Ok(warp::reply::json(&a))
+    let scan_all_things = client
+        .scan(ScanInput {
+            ..ScanInput::default()
+        })
+        .sync();
+
+    match scan_all_things {
+        Ok(s) => {
+            info!("got this: {:?}", s);
+            // probably iterate through s
+        }
+        Err(e) => {
+            info!("nope: {:?}", e);
+            // return bad things?
+        }
+    }
+    let m = Meal::default();
+    Ok(warp::reply::json(&vec![m]))
 }
 
 // should work with curl -i -X POST -H "content-type: application/json" -d '{"name":"Wings","id":3,"description":"mmm"}'  http://127.0.0.1:3030/meals/
@@ -157,7 +210,7 @@ pub async fn create_meal(create: Meal) -> Result<impl warp::Reply, Infallible> {
     let d_result = client
         .put_item(PutItemInput {
             table_name: "meals".to_string(),
-            item: newone.into(),
+            item: newone.clone().into(),
             ..PutItemInput::default()
         })
         .sync();
