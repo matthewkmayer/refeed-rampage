@@ -182,22 +182,21 @@ async fn all_meals() -> Result<impl warp::Reply, Infallible> {
 
     match scan_all_things {
         Ok(s) => {
-            info!("got this: {:?}", s.items);
             let doot: Vec<Meal> = s
                 .items
                 .unwrap()
                 .iter()
                 .map(|result| Meal::from_attrs(result.clone()).unwrap())
                 .collect();
-            return Ok(warp::reply::json(&doot));
+            Ok(warp::reply::json(&doot))
         }
         Err(e) => {
             info!("nope: {:?}", e);
-            // return bad things?
+            // return bad things like an HTTP 500
+            let m = Meal::default();
+            Ok(warp::reply::json(&vec![m]))
         }
     }
-    let m = Meal::default();
-    Ok(warp::reply::json(&vec![m]))
 }
 
 // should work with curl -i -X POST -H "content-type: application/json" -d '{"name":"Wings","id":3,"description":"mmm"}'  http://127.0.0.1:3030/meals/
@@ -230,7 +229,9 @@ pub async fn create_meal(create: Meal) -> Result<impl warp::Reply, Infallible> {
         }
         Err(e) => {
             info!("blew up: {:?}", e);
-            let r = warp::reply::json(&());
+            let r = warp::reply::json(&ErrorResp {
+                error: e.to_string(),
+            });
             Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST))
         }
     }
@@ -241,7 +242,6 @@ fn json_body() -> impl Filter<Extract = (Meal,), Error = warp::Rejection> + Clon
 }
 
 async fn prepopulate_db() {
-    // create rusoto client
     let client = DynamoDbClient::new(Region::Custom {
         name: "us-east-1".into(),
         endpoint: "http://localhost:8000".into(),
@@ -328,6 +328,11 @@ async fn prepopulate_db() {
             ..PutItemInput::default()
         })
         .sync();
+}
+
+#[derive(Deserialize, Serialize, Debug, Item, Clone, Default)]
+pub struct ErrorResp {
+    error: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Item, Clone, Default)]
