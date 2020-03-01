@@ -241,9 +241,6 @@ fn json_body() -> impl Filter<Extract = (Meal,), Error = warp::Rejection> + Clon
 }
 
 async fn prepopulate_db() {
-    // ---------------------------------------------------
-    // Dynamo bits:
-
     // create rusoto client
     let client = DynamoDbClient::new(Region::Custom {
         name: "us-east-1".into(),
@@ -273,8 +270,33 @@ async fn prepopulate_db() {
         Ok(_) => debug!("All good making table"),
         Err(e) => {
             debug!("Issue creating table: {:?}", e);
+            // local one may not be ready yet, wait and retry:
             if !e.to_string().contains("preexisting table") {
-                panic!("Ran into an issue unrelated to table pre existing");
+                debug!("sleeping for a minute and retrying");
+                std::thread::sleep(std::time::Duration::from_millis(5000));
+                let create_table_req = client.create_table(CreateTableInput {
+                    table_name: table_name.clone(),
+                    key_schema: vec![KeySchemaElement {
+                        attribute_name: "id".into(),
+                        key_type: "HASH".into(),
+                    }],
+                    attribute_definitions: vec![AttributeDefinition {
+                        attribute_name: "id".into(),
+                        attribute_type: "S".into(),
+                    }],
+                    provisioned_throughput: Some(ProvisionedThroughput {
+                        read_capacity_units: 1,
+                        write_capacity_units: 1,
+                    }),
+                    ..CreateTableInput::default()
+                });
+                match create_table_req.sync() {
+                    Ok(_) => info!("it got better"),
+                    Err(e) => error!(
+                        "failed to find dynamodb on second attempt, bailing. Error: {:?}",
+                        e
+                    ),
+                }
             }
         }
     }
