@@ -1,10 +1,10 @@
 use dynomite::{
     dynamodb::{
-        AttributeDefinition, CreateTableInput, DynamoDb, DynamoDbClient, KeySchemaElement,
-        ProvisionedThroughput, PutItemInput,
+        AttributeDefinition, CreateTableInput, DynamoDb, DynamoDbClient, GetItemInput,
+        KeySchemaElement, ProvisionedThroughput, PutItemInput,
     },
     retry::Policy,
-    Item, Retries,
+    FromAttributes, Item, Retries,
 };
 use rusoto_core::Region;
 use serde_derive::{Deserialize, Serialize};
@@ -105,12 +105,35 @@ async fn delete_meal(i: Uuid, db: Db) -> Result<impl warp::Reply, Infallible> {
     Ok(StatusCode::NO_CONTENT)
 }
 
-async fn specific_meal(i: Uuid, db: Db) -> Result<impl warp::Reply, Infallible> {
-    let fake_db = db.lock().await;
-    log::info!("ds is {:?}", db);
-    Ok(warp::reply::json(
-        &fake_db.get_key_value(&i.to_string()).unwrap().1,
-    ))
+async fn specific_meal(i: Uuid, _db: Db) -> Result<impl warp::Reply, Infallible> {
+    // we should pass one of these around instead of recreating it
+    let client = DynamoDbClient::new(Region::Custom {
+        name: "us-east-1".into(),
+        endpoint: "http://localhost:8000".into(),
+    })
+    .with_retries(Policy::default());
+    let m = Meal {
+        id: i,
+        ..Default::default()
+    };
+    let item = client
+        .get_item(GetItemInput {
+            table_name: "meals".to_string(),
+            key: m.key(),
+            ..GetItemInput::default()
+        })
+        .sync()
+        .map(|result| result.item.map(Meal::from_attrs));
+    match item {
+        Ok(item_found) => {
+            info!("success, item be all {:?}", item_found);
+            let r = warp::reply::json(&item_found.unwrap().unwrap());
+            return Ok(warp::reply::with_status(r, StatusCode::OK));
+        }
+        Err(e) => info!("It blew up :( {:?}", e),
+    }
+    let r = warp::reply::json(&());
+    Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST))
 }
 
 async fn update_meal(i: Uuid, create: Meal, db: Db) -> Result<impl warp::Reply, Infallible> {
@@ -139,6 +162,30 @@ pub async fn create_meal(create: Meal, db: Db) -> Result<impl warp::Reply, Infal
     log::debug!("create_meal: {:?}", create);
 
     let mut d = db.lock().await;
+
+    let client = DynamoDbClient::new(Region::Custom {
+        name: "us-east-1".into(),
+        endpoint: "http://localhost:8000".into(),
+    })
+    .with_retries(Policy::default());
+
+    let newone = Meal {
+        id: Uuid::new_v4(),
+        ..create.clone() // remove clone after the dump other backing data store
+    };
+
+    let d_result = client
+        .put_item(PutItemInput {
+            table_name: "meals".to_string(),
+            item: newone.into(),
+            ..PutItemInput::default()
+        })
+        .sync();
+    match d_result {
+        Ok(_) => info!("aww yiss added it"),
+        Err(e) => info!("blew up: {:?}", e),
+    }
+
     let new_id: Uuid;
 
     if !d.contains_key(&create.id.to_string()) {
@@ -259,7 +306,7 @@ async fn prepopulate_db(db: Db) {
         .sync();
 }
 
-#[derive(Deserialize, Serialize, Debug, Item, Clone)]
+#[derive(Deserialize, Serialize, Debug, Item, Clone, Default)]
 pub struct Meal {
     #[dynomite(rename = "mealName")]
     name: String,
