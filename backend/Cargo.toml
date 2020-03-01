@@ -8,7 +8,7 @@ edition = "2018"
 seed = "^0.6.0"
 wasm-bindgen = "^0.2.50"
 tokio = { version = "0.2", features = ["macros"] }
-futures = { version = "0.3", features = ["compat"] }
+futures = { version = "0.3" }
 warp = "0.2"
 rand = "0.7"
 log = "0.4"

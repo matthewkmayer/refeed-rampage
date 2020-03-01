@@ -1,13 +1,11 @@
 use dynomite::{
-    attr_map,
     dynamodb::{
-        AttributeDefinition, CreateTableInput, DynamoDb, DynamoDbClient, GetItemInput,
-        KeySchemaElement, ProvisionedThroughput, PutItemInput, ScanInput,
+        AttributeDefinition, CreateTableInput, DynamoDb, DynamoDbClient, KeySchemaElement,
+        ProvisionedThroughput,
     },
     retry::Policy,
-    DynamoDbExt, FromAttributes, Item, Retries,
+    Retries,
 };
-
 use rusoto_core::Region;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -205,7 +203,7 @@ async fn prepopulate_db(db: Db) {
     .with_retries(Policy::default());
     let table_name = "books".to_string();
     let create_table_req = client.create_table(CreateTableInput {
-        table_name: table_name.clone(),
+        table_name,
         key_schema: vec![KeySchemaElement {
             attribute_name: "id".into(),
             key_type: "HASH".into(),
@@ -221,7 +219,7 @@ async fn prepopulate_db(db: Db) {
         ..CreateTableInput::default()
     });
     log::debug!("Gonna run a future");
-    let f = futures::compat::Compat01As03::new(create_table_req).await;
+    let f = create_table_req.sync();
     log::debug!("it ran: {:?}", f);
 }
 
