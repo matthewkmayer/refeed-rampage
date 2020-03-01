@@ -188,13 +188,18 @@ async fn all_meals() -> Result<impl warp::Reply, Infallible> {
                 .iter()
                 .map(|result| Meal::from_attrs(result.clone()).unwrap())
                 .collect();
-            Ok(warp::reply::json(&doot))
+            let r = warp::reply::json(&doot);
+            Ok(warp::reply::with_status(r, StatusCode::OK))
         }
         Err(e) => {
             info!("nope: {:?}", e);
-            // return bad things like an HTTP 500
-            let m = Meal::default();
-            Ok(warp::reply::json(&vec![m]))
+            let r = warp::reply::json(&ErrorResp {
+                error: e.to_string(),
+            });
+            Ok(warp::reply::with_status(
+                r,
+                StatusCode::INTERNAL_SERVER_ERROR,
+            ))
         }
     }
 }
@@ -232,7 +237,10 @@ pub async fn create_meal(create: Meal) -> Result<impl warp::Reply, Infallible> {
             let r = warp::reply::json(&ErrorResp {
                 error: e.to_string(),
             });
-            Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST))
+            Ok(warp::reply::with_status(
+                r,
+                StatusCode::INTERNAL_SERVER_ERROR,
+            ))
         }
     }
 }
