@@ -45,28 +45,26 @@ mod example_steps {
         };
 
         when "I request all meals" |world, _step| {
-            let resp = reqwest::blocking::get("http://127.0.0.1:3030/meals").unwrap();
-            panic!("all meal req resp text is {:?}", resp.text());
-            // .json::<Vec<Meal>>().unwrap();
-            // world.meals = resp;
+            let resp = reqwest::blocking::get("http://127.0.0.1:3030/meals").unwrap()
+            // panic!("all meal req resp text is {:?}", resp.text());
+            .json::<Vec<Meal>>().unwrap();
+            world.meals = resp;
         };
 
-
-        // replace unwraps with expects
         when "I request to see a specific meal" |world, _step| {
           // a well known one
           let resp = reqwest::blocking::get("http://127.0.0.1:3030/meals/f11b1c5e-d6d8-4dce-8a9d-9e05d870b881").expect("GET for a meal should work, but it didn't.");
-          panic!("resp text is {:?}", resp.text());
-        //   match resp.json::<Meal>() {
-        //       Ok(o) => world.meal = o,
-        //       Err(e) => panic!("got an error: {}", e),
-        //   }
+        //   panic!("resp text is {:?}", resp.text());
+          match resp.json::<Meal>() {
+              Ok(o) => world.meal = o,
+              Err(e) => panic!("got an error: {}", e),
+          }
           
       };
 
         then "I see some meals" |world, _step| {
             assert_eq!(world.meals.len() > 0, true);
-            panic!("Meals be all {:?}", world.meals);
+            println!("Meals be all {:?}", world.meals);
         };
 
         then "I can see that meal" |world, _step| {
