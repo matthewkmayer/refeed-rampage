@@ -165,6 +165,7 @@ async fn update_meal(_id: Uuid, create: Meal) -> Result<impl warp::Reply, Infall
     }
 }
 
+// wow it's... not great
 async fn all_meals() -> Result<impl warp::Reply, Infallible> {
     let client = DynamoDbClient::new(Region::Custom {
         name: "us-east-1".into(),
@@ -174,14 +175,21 @@ async fn all_meals() -> Result<impl warp::Reply, Infallible> {
 
     let scan_all_things = client
         .scan(ScanInput {
+            table_name: "meals".to_string(),
             ..ScanInput::default()
         })
         .sync();
 
     match scan_all_things {
         Ok(s) => {
-            info!("got this: {:?}", s);
-            // probably iterate through s
+            info!("got this: {:?}", s.items);
+            let doot: Vec<Meal> = s
+                .items
+                .unwrap()
+                .iter()
+                .map(|result| Meal::from_attrs(result.clone()).unwrap())
+                .collect();
+            return Ok(warp::reply::json(&doot));
         }
         Err(e) => {
             info!("nope: {:?}", e);
