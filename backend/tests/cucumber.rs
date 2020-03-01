@@ -65,6 +65,7 @@ mod example_steps {
 
         then "I see some meals" |world, _step| {
             assert_eq!(world.meals.len() > 0, true);
+            panic!("Meals be all {:?}", world.meals);
         };
 
         then "I can see that meal" |world, _step| {
