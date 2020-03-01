@@ -218,9 +218,19 @@ async fn prepopulate_db(db: Db) {
         }),
         ..CreateTableInput::default()
     });
-    log::debug!("Gonna run a future");
+    debug!("Gonna run a future");
     let f = create_table_req.sync();
-    log::debug!("it ran: {:?}", f);
+    match f {
+        Ok(_) => debug!("All good making table"),
+        Err(e) => {
+            debug!("Issue creating table: {:?}", e);
+            let s = e.to_string();
+            debug!("e as string is {}", s);
+            if !e.to_string().contains("preexisting table") {
+                panic!("Ran into an issue unrelated to table pre existing");
+            }
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug)]
