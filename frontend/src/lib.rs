@@ -2,6 +2,7 @@
 
 use seed::{browser::service::fetch, prelude::*, *};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 type MealMap = Vec<Meal>;
 
@@ -18,8 +19,8 @@ struct Model {
 enum Pages {
     Home,
     Meals,
-    ViewSpecificMeal { meal_id: i32 },
-    EditMeal { meal_id: i32 },
+    ViewSpecificMeal { meal_id: Uuid },
+    EditMeal { meal_id: Uuid },
     CreateMeal,
     Login,
 }
@@ -33,13 +34,13 @@ impl Default for Model {
             meal_under_construction: Meal {
                 name: "".to_string(),
                 description: "".to_string(),
-                id: 0,
+                id: Uuid::new_v4(),
                 photos: None,
             },
             meal: Meal {
                 name: "".to_string(),
                 description: "".to_string(),
-                id: 0,
+                id: Uuid::new_v4(),
                 photos: None,
             },
         }
@@ -60,7 +61,7 @@ impl Model {
 #[derive(Serialize)]
 struct CreateMealRequestBody {
     pub name: String,
-    pub id: i32,
+    pub id: Uuid,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -73,7 +74,7 @@ struct MealDeletedResponse {}
 #[derive(Clone, Debug)]
 enum Msg {
     // editing
-    EditMeal { meal_id: i32 },
+    EditMeal { meal_id: Uuid },
     MealCreateUpdateName(String),
     MealCreateUpdateDescription(String),
     CreateNewMeal(Meal),
@@ -81,12 +82,12 @@ enum Msg {
     MealValidationError,
     MealCreated(seed::fetch::ResponseDataResult<MealCreatedResponse>),
     // deleting
-    DeleteMeal { meal_id: i32 },
+    DeleteMeal { meal_id: Uuid },
     MealDeleted(seed::fetch::ResponseDataResult<MealDeletedResponse>),
     // changing page
     ChangePage(Pages),
     // fetching etc
-    FetchData { meal_id: Option<i32> },
+    FetchData { meal_id: Option<Uuid> },
     MealsFetched(fetch::ResponseDataResult<MealMap>),
     MealFetched(fetch::ResponseDataResult<Meal>),
 }
@@ -209,7 +210,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 model.meal_under_construction = Meal {
                     name: "".to_string(),
                     description: "".to_string(),
-                    id: 0,
+                    id: Uuid::new_v4(),
                     photos: None,
                 };
             }
@@ -473,7 +474,7 @@ async fn fetch_meals() -> Result<Msg, Msg> {
     Request::new(url).fetch_json_data(Msg::MealsFetched).await
 }
 
-async fn delete_meal(id: i32) -> Result<Msg, Msg> {
+async fn delete_meal(id: Uuid) -> Result<Msg, Msg> {
     let url = format!("http://127.0.0.1:3030/meals/{}", id);
     Request::new(url)
         .method(Method::Delete)
@@ -501,7 +502,7 @@ async fn update_meal(meal: Meal) -> Result<Msg, Msg> {
         .await
 }
 
-async fn fetch_meal(id: i32) -> Result<Msg, Msg> {
+async fn fetch_meal(id: Uuid) -> Result<Msg, Msg> {
     let url = format!("http://127.0.0.1:3030/meals/{}", id);
     Request::new(url).fetch_json_data(Msg::MealFetched).await
 }
@@ -517,7 +518,7 @@ fn routes(url: Url) -> Option<Msg> {
                 if page == &"create" {
                     return Some(Msg::ChangePage(Pages::CreateMeal));
                 }
-                match page.parse::<i32>() {
+                match page.parse::<Uuid>() {
                     Ok(m_id) => match url.path.get(2).as_ref() {
                         Some(i) => {
                             if i == &"edit" {
@@ -564,7 +565,7 @@ fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
         "meals" => match url.path.get(1).as_ref() {
             Some(page) => match page.as_ref() {
                 "create" => Pages::CreateMeal,
-                _ => match page.parse::<i32>() {
+                _ => match page.parse::<Uuid>() {
                     Ok(m_id) => match url.path.get(2).as_ref() {
                         Some(i) => match i.as_ref() {
                             "edit" => Pages::EditMeal { meal_id: m_id },
@@ -588,7 +589,7 @@ fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Debug)]
 struct Meal {
     name: String,
-    id: i32,
+    id: Uuid,
     photos: Option<String>,
     description: String,
 }
