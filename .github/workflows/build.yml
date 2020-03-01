@@ -66,5 +66,4 @@ jobs:
           override: true
       - run: cd backend && cargo build
       - run: ./run-em-for-cukes.sh
-      - run: cargo test --test cucumber
-
+      - run: sleep 6 && cargo test --test cucumber
