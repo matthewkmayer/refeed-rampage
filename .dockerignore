@@ -1,7 +1,0 @@
-backend/target/*
-frontend/target/*
-gauge-tests/*
-.git
-.github
-.vscode
-target/
