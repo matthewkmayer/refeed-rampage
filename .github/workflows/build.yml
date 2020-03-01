@@ -65,5 +65,4 @@ jobs:
           toolchain: stable
           override: true
       - run: cd backend && cargo build
-      - run: ./run-em-for-cukes.sh
-      - run: sleep 6 && cargo test --test cucumber
+      - run: ./run-em-for-cukes.sh && sleep 6 && cargo test --test cucumber
