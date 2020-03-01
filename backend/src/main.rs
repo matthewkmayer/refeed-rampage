@@ -163,7 +163,7 @@ async fn prepopulate_db(db: Db) {
     d.insert(
         id.to_string(),
         Meal {
-            id: id,
+            id,
             name: "Pizza".to_string(),
             photos: None,
             description: "Delicious pizza".to_string(),
@@ -173,7 +173,7 @@ async fn prepopulate_db(db: Db) {
     d.insert(
         id.to_string(),
         Meal {
-            id: id,
+            id,
             name: "Burritos".to_string(),
             photos: None,
             description: "Amazing burritos".to_string(),
