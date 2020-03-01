@@ -3,10 +3,11 @@ use std::collections::BTreeMap;
 use std::convert::Infallible;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 use warp::http::StatusCode;
 use warp::Filter;
 
-type Db = Arc<Mutex<BTreeMap<i32, Meal>>>;
+type Db = Arc<Mutex<BTreeMap<String, Meal>>>;
 
 #[tokio::main]
 async fn main() {
@@ -41,7 +42,7 @@ fn meal_filters(
 fn a_meal_filter(
     ds: Db,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("meals" / i32)
+    warp::path!("meals" / Uuid)
         .and(warp::get())
         .and(with_db(ds))
         .and_then(specific_meal)
@@ -65,14 +66,14 @@ fn meal_create(ds: Db) -> impl Filter<Extract = impl warp::Reply, Error = warp::
 }
 
 fn meal_delete(ds: Db) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("meals" / i32)
+    warp::path!("meals" / Uuid)
         .and(warp::delete())
         .and(with_db(ds))
         .and_then(delete_meal)
 }
 
 fn meal_update(ds: Db) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("meals" / i32)
+    warp::path!("meals" / Uuid)
         .and(warp::put())
         .and(json_body())
         .and(with_db(ds))
@@ -80,34 +81,36 @@ fn meal_update(ds: Db) -> impl Filter<Extract = impl warp::Reply, Error = warp::
 }
 
 // curl -i -X DELETE http://localhost:3030/meals/1
-async fn delete_meal(i: i32, db: Db) -> Result<impl warp::Reply, Infallible> {
+async fn delete_meal(i: Uuid, db: Db) -> Result<impl warp::Reply, Infallible> {
     let mut fake_db = db.lock().await;
-    if fake_db.contains_key(&i) {
-        fake_db.remove(&i);
+    if fake_db.contains_key(&i.to_string()) {
+        fake_db.remove(&i.to_string());
     } else {
         return Ok(StatusCode::BAD_REQUEST);
     }
     Ok(StatusCode::NO_CONTENT)
 }
 
-async fn specific_meal(i: i32, db: Db) -> Result<impl warp::Reply, Infallible> {
+async fn specific_meal(i: Uuid, db: Db) -> Result<impl warp::Reply, Infallible> {
     let fake_db = db.lock().await;
     // TODO: figure out why logging doesn't work as I expected it to
     log::info!("ds is {:?}", db);
-    Ok(warp::reply::json(&fake_db.get_key_value(&i).unwrap().1))
+    Ok(warp::reply::json(
+        &fake_db.get_key_value(&i.to_string()).unwrap().1,
+    ))
 }
 
-async fn update_meal(i: i32, create: Meal, db: Db) -> Result<impl warp::Reply, Infallible> {
+async fn update_meal(i: Uuid, create: Meal, db: Db) -> Result<impl warp::Reply, Infallible> {
     let mut fake_db = db.lock().await;
-    if fake_db.contains_key(&i) {
-        if let Some(a) = fake_db.get_mut(&i) {
+    if fake_db.contains_key(&i.to_string()) {
+        if let Some(a) = fake_db.get_mut(&i.to_string()) {
             *a = create
         }
     } else {
         let r = warp::reply::json(&());
         return Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST));
     }
-    let json = warp::reply::json(fake_db.get(&i).unwrap());
+    let json = warp::reply::json(fake_db.get(&i.to_string()).unwrap());
     Ok(warp::reply::with_status(json, StatusCode::ACCEPTED))
 }
 
@@ -123,14 +126,14 @@ pub async fn create_meal(create: Meal, db: Db) -> Result<impl warp::Reply, Infal
     log::debug!("create_meal: {:?}", create);
 
     let mut d = db.lock().await;
-    let len: usize;
+    let new_id: Uuid;
 
-    if !d.contains_key(&create.id) {
-        len = d.len() + 1;
+    if !d.contains_key(&create.id.to_string()) {
+        new_id = Uuid::new_v4();
         d.insert(
-            len as i32,
+            new_id.to_string(),
             Meal {
-                id: len as i32,
+                id: new_id,
                 name: create.name,
                 photos: None,
                 description: create.description,
@@ -142,7 +145,7 @@ pub async fn create_meal(create: Meal, db: Db) -> Result<impl warp::Reply, Infal
     }
 
     // casting between usize and i32 would go away when a real backend is used
-    let json = warp::reply::json(d.get(&(len as i32)).unwrap());
+    let json = warp::reply::json(d.get(&new_id.to_string()).unwrap());
     Ok(warp::reply::with_status(json, StatusCode::CREATED))
 }
 
@@ -156,19 +159,21 @@ fn json_body() -> impl Filter<Extract = (Meal,), Error = warp::Rejection> + Clon
 
 async fn prepopulate_db(db: Db) {
     let mut d = db.lock().await;
+    let mut id = Uuid::parse_str("936DA01F9ABD4d9d80C702AF85C822A8").unwrap();
     d.insert(
-        1,
+        id.to_string(),
         Meal {
-            id: 1,
+            id: id,
             name: "Pizza".to_string(),
             photos: None,
             description: "Delicious pizza".to_string(),
         },
     );
+    id = Uuid::parse_str("f11b1c5e-d6d8-4dce-8a9d-9e05d870b881").unwrap();
     d.insert(
-        2,
+        id.to_string(),
         Meal {
-            id: 2,
+            id: id,
             name: "Burritos".to_string(),
             photos: None,
             description: "Amazing burritos".to_string(),
@@ -179,7 +184,7 @@ async fn prepopulate_db(db: Db) {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Meal {
     name: String,
-    id: i32,
+    id: Uuid,
     photos: Option<String>,
     description: String,
 }

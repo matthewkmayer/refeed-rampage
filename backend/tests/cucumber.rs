@@ -1,10 +1,11 @@
 use cucumber::cucumber;
 use serde_derive::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Meal {
     name: String,
-    id: i32,
+    id: Uuid,
     photos: Option<String>,
     description: String,
 }
@@ -23,7 +24,7 @@ impl std::default::Default for MyWorld {
             meals: vec![],
             meal: Meal {
                 name: "".to_string(),
-                id: 0,
+                id: Uuid::new_v4(),
                 photos: None,
                 description: "".to_string(),
             },
@@ -50,7 +51,8 @@ mod example_steps {
         };
 
         when "I request to see a specific meal" |world, _step| {
-          let resp = reqwest::blocking::get("http://127.0.0.1:3030/meals/1").unwrap()
+          // a well known one
+          let resp = reqwest::blocking::get("http://127.0.0.1:3030/meals/f11b1c5e-d6d8-4dce-8a9d-9e05d870b881").unwrap()
           .json::<Meal>().unwrap();
           world.meal = resp;
       };
