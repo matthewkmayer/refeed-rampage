@@ -155,12 +155,12 @@ async fn update_meal(_id: Uuid, create: Meal) -> Result<impl warp::Reply, Infall
         Ok(_) => {
             info!("aww yiss added it");
             let r = warp::reply::json(&create);
-            return Ok(warp::reply::with_status(r, StatusCode::ACCEPTED));
+            Ok(warp::reply::with_status(r, StatusCode::ACCEPTED))
         }
         Err(e) => {
             info!("blew up: {:?}", e);
             let r = warp::reply::json(&());
-            return Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST));
+            Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST))
         }
     }
 }
@@ -212,7 +212,7 @@ pub async fn create_meal(create: Meal) -> Result<impl warp::Reply, Infallible> {
 
     let newone = Meal {
         id: Uuid::new_v4(),
-        ..create.clone() // remove clone after the dump other backing data store
+        ..create
     };
 
     let d_result = client
@@ -226,12 +226,12 @@ pub async fn create_meal(create: Meal) -> Result<impl warp::Reply, Infallible> {
         Ok(_) => {
             info!("aww yiss added it");
             let r = warp::reply::json(&newone);
-            return Ok(warp::reply::with_status(r, StatusCode::CREATED));
+            Ok(warp::reply::with_status(r, StatusCode::CREATED))
         }
         Err(e) => {
             info!("blew up: {:?}", e);
             let r = warp::reply::json(&());
-            return Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST));
+            Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST))
         }
     }
 }
