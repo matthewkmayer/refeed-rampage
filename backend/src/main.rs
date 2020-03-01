@@ -1,7 +1,19 @@
+use dynomite::{
+    attr_map,
+    dynamodb::{
+        AttributeDefinition, CreateTableInput, DynamoDb, DynamoDbClient, GetItemInput,
+        KeySchemaElement, ProvisionedThroughput, PutItemInput, ScanInput,
+    },
+    retry::Policy,
+    DynamoDbExt, FromAttributes, Item, Retries,
+};
+
+use rusoto_core::Region;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::convert::Infallible;
 use std::sync::Arc;
+use tokio::runtime::Runtime;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 use warp::http::StatusCode;
@@ -179,6 +191,34 @@ async fn prepopulate_db(db: Db) {
             description: "Amazing burritos".to_string(),
         },
     );
+    // ---------------------------------------------------
+    // Dynamo bits:
+
+    let mut rt = Runtime::new().expect("failed to initialize futures runtime");
+    // create rusoto client
+    let client = DynamoDbClient::new(Region::Custom {
+        name: "us-east-1".into(),
+        endpoint: "http://localhost:8000".into(),
+    })
+    .with_retries(Policy::default());
+    let table_name = "books".to_string();
+    let create_table_req = client.create_table(CreateTableInput {
+        table_name: table_name.clone(),
+        key_schema: vec![KeySchemaElement {
+            attribute_name: "id".into(),
+            key_type: "HASH".into(),
+        }],
+        attribute_definitions: vec![AttributeDefinition {
+            attribute_name: "id".into(),
+            attribute_type: "S".into(),
+        }],
+        provisioned_throughput: Some(ProvisionedThroughput {
+            read_capacity_units: 1,
+            write_capacity_units: 1,
+        }),
+        ..CreateTableInput::default()
+    });
+    let _ = rt.block_on(futures::compat::Compat01As03::new(create_table_req));
 }
 
 #[derive(Deserialize, Serialize, Debug)]

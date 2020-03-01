@@ -8,6 +8,7 @@ edition = "2018"
 seed = "^0.6.0"
 wasm-bindgen = "^0.2.50"
 tokio = { version = "0.2", features = ["macros"] }
+futures = { version = "0.3", features = ["compat"] }
 warp = "0.2"
 rand = "0.7"
 log = "0.4"
@@ -16,6 +17,7 @@ serde = "1.0"
 serde_derive = "1.0"
 uuid = { version = "0.8", features = ["serde", "v4"] }
 dynomite = { version = "0.7", features = ["rustls"], default-features = false }
+rusoto_core = {version = "0.41", features = ["rustls"], default-features = false }
 
 [[test]]
 name = "cucumber"
