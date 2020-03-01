@@ -45,9 +45,10 @@ mod example_steps {
         };
 
         when "I request all meals" |world, _step| {
-            let resp = reqwest::blocking::get("http://127.0.0.1:3030/meals").unwrap()
-            .json::<Vec<Meal>>().unwrap();
-            world.meals = resp;
+            let resp = reqwest::blocking::get("http://127.0.0.1:3030/meals").unwrap();
+            panic!("all meal req resp text is {:?}", resp.text());
+            // .json::<Vec<Meal>>().unwrap();
+            // world.meals = resp;
         };
 
 
