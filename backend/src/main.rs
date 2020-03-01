@@ -13,17 +13,21 @@ use serde_derive::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::convert::Infallible;
 use std::sync::Arc;
-use tokio::runtime::Runtime;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 use warp::http::StatusCode;
 use warp::Filter;
+
+extern crate pretty_env_logger;
+#[macro_use]
+extern crate log;
 
 type Db = Arc<Mutex<BTreeMap<String, Meal>>>;
 
 #[tokio::main]
 async fn main() {
     pretty_env_logger::init();
+    info!("Firing up");
     // a bunch from https://github.com/seanmonstar/warp/blob/master/examples/todos.rs
     let fake_db = Arc::new(Mutex::new(BTreeMap::new()));
     prepopulate_db(fake_db.clone()).await;
@@ -105,7 +109,6 @@ async fn delete_meal(i: Uuid, db: Db) -> Result<impl warp::Reply, Infallible> {
 
 async fn specific_meal(i: Uuid, db: Db) -> Result<impl warp::Reply, Infallible> {
     let fake_db = db.lock().await;
-    // TODO: figure out why logging doesn't work as I expected it to
     log::info!("ds is {:?}", db);
     Ok(warp::reply::json(
         &fake_db.get_key_value(&i.to_string()).unwrap().1,
@@ -217,8 +220,9 @@ async fn prepopulate_db(db: Db) {
         }),
         ..CreateTableInput::default()
     });
-    let _ = futures::compat::Compat01As03::new(create_table_req).await;
-    log::debug!("beep");
+    log::debug!("Gonna run a future");
+    let f = futures::compat::Compat01As03::new(create_table_req).await;
+    log::debug!("it ran: {:?}", f);
 }
 
 #[derive(Deserialize, Serialize, Debug)]
