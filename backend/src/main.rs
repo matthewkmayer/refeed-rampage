@@ -250,6 +250,7 @@ fn json_body() -> impl Filter<Extract = (Meal,), Error = warp::Rejection> + Clon
 }
 
 async fn prepopulate_db() {
+    // how about a database liveness check? Keep prodding until it's ready.
     let client = DynamoDbClient::new(Region::Custom {
         name: "us-east-1".into(),
         endpoint: "http://localhost:8000".into(),
@@ -281,7 +282,7 @@ async fn prepopulate_db() {
             // local one may not be ready yet, wait and retry:
             if !e.to_string().contains("preexisting table") {
                 debug!("sleeping for a minute and retrying");
-                std::thread::sleep(std::time::Duration::from_millis(5000));
+                std::thread::sleep(std::time::Duration::from_millis(10_000));
                 let create_table_req = client.create_table(CreateTableInput {
                     table_name: table_name.clone(),
                     key_schema: vec![KeySchemaElement {
