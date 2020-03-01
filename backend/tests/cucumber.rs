@@ -50,10 +50,12 @@ mod example_steps {
             world.meals = resp;
         };
 
+
+        // replace unwraps with expects
         when "I request to see a specific meal" |world, _step| {
           // a well known one
-          let resp = reqwest::blocking::get("http://127.0.0.1:3030/meals/f11b1c5e-d6d8-4dce-8a9d-9e05d870b881").unwrap()
-          .json::<Meal>().unwrap();
+          let resp = reqwest::blocking::get("http://127.0.0.1:3030/meals/f11b1c5e-d6d8-4dce-8a9d-9e05d870b881").expect("GET for a meal should work, but it didn't.")
+          .json::<Meal>().expect("Should have gotten a meal in JSON form but got something else.");
           world.meal = resp;
       };
 
