@@ -11,3 +11,5 @@ To see logs: `RUST_LOG="meals=debug" cargo run` .
 API level:
 
 `cargo test --test cucumber`
+
+Local Dynamo: `docker run --rm -p 8000:8000 amazon/dynamodb-local`
