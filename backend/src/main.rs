@@ -300,7 +300,7 @@ async fn prepopulate_db() {
                 });
                 match create_table_req.sync() {
                     Ok(_) => info!("it got better"),
-                    Err(e) => error!(
+                    Err(e) => panic!( // return to error! after debugging
                         "failed to find dynamodb on second attempt, bailing. Error: {:?}",
                         e
                     ),

@@ -65,4 +65,4 @@ jobs:
           toolchain: stable
           override: true
       - run: cd backend && cargo build
-      - run: AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY ./run-em-for-cukes.sh && sleep 6 && cargo test --test cucumber
+      - run: ./run-em-for-cukes.sh && sleep 6 && cargo test --test cucumber
