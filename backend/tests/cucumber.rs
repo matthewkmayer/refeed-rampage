@@ -55,10 +55,11 @@ mod example_steps {
         when "I request to see a specific meal" |world, _step| {
           // a well known one
           let resp = reqwest::blocking::get("http://127.0.0.1:3030/meals/f11b1c5e-d6d8-4dce-8a9d-9e05d870b881").expect("GET for a meal should work, but it didn't.");
-          match resp.json::<Meal>() {
-              Ok(o) => world.meal = o,
-              Err(e) => panic!("got an error: {}", e),
-          }
+          panic!("resp text is {:?}", resp.text());
+        //   match resp.json::<Meal>() {
+        //       Ok(o) => world.meal = o,
+        //       Err(e) => panic!("got an error: {}", e),
+        //   }
           
       };
 
