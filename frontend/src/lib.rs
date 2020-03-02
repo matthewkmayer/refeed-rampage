@@ -444,24 +444,28 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
         .iter()
         .map(|m| {
             tr![
-                th![
-                    class!["col-1"],
-                    div![button![
-                        simple_ev(Ev::Click, Msg::EditMeal { meal_id: m.id }),
-                        attrs! {At::Href => format!("/meals/{}/edit", m.id)},
-                        "✏️"
-                    ]]
-                ],
+                td![button![
+                    simple_ev(Ev::Click, Msg::EditMeal { meal_id: m.id }),
+                    attrs! {At::Href => format!("/meals/{}/edit", m.id)},
+                    "✏️"
+                ]],
                 td![m.name],
                 td![m.description]
             ]
         })
         .collect();
 
-    let l = table![
-        class!["table table-striped table-sm"],
-        thead![tr![th![], th![class!["col-2"], "name"], th!["description"],]],
-        tbody![bodies,]
+    let l = div![
+        class!["table-responsive-sm col-9"],
+        table![
+            class!["table table-striped table-sm"],
+            thead![tr![
+                th![attrs! { At::Scope => "col" }],
+                th!["name", attrs! { At::Scope => "col" }],
+                th!["description", attrs! { At::Scope => "col" }],
+            ]],
+            tbody![bodies,]
+        ]
     ];
     let b = p![button![attrs! {At::Href => "/meals/create"}, "➕"]];
     vec![l, b]
