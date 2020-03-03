@@ -444,6 +444,8 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
         .iter()
         .map(|m| {
             tr![
+                style! {St::Cursor => "pointer"},
+                attrs! {At::Href => format!("/meals/{}", m.id)},
                 td![button![
                     simple_ev(Ev::Click, Msg::EditMeal { meal_id: m.id }),
                     attrs! {At::Href => format!("/meals/{}/edit", m.id)},
