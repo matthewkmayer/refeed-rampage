@@ -317,7 +317,6 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
             ],
         ],
         button![
-            class!["btn btn-primary"],
             submit_text,
             simple_ev(
                 Ev::Click,
@@ -398,7 +397,7 @@ fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
                 ]
             ]
         ],
-        button!["Login", attrs! {At::Href => "/login"},],
+        a!["Login", class!["nav-link"], attrs! {At::Href => "/login"}],
     ]
 }
 
