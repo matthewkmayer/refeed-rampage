@@ -2,6 +2,7 @@
 
 sudo apt update
 sudo apt install -y nginx
-sudo systemctl enable nginx
 
-# set up the nginx config
+# how can we copy the files over before the next steps?
+sudo systemctl enable nginx
+sudo systemctl enable rrmeals

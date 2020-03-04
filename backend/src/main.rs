@@ -41,6 +41,11 @@ fn meal_filters() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejec
         .or(meal_create())
         .or(meal_delete())
         .or(meal_update())
+        .or(status_filter())
+}
+
+fn status_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("health").and(warp::get()).and_then(healthy)
 }
 
 fn a_meal_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -103,6 +108,15 @@ async fn delete_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
             Ok(StatusCode::BAD_REQUEST)
         }
     }
+}
+
+async fn healthy() -> Result<impl warp::Reply, Infallible> {
+    let h = Health {
+        healthy: true,
+        version: "v.0.0.1-whatever".to_string(), // should have git hash in here later
+    };
+    let r = warp::reply::json(&h);
+    Ok(warp::reply::with_status(r, StatusCode::OK))
 }
 
 async fn specific_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
@@ -352,4 +366,10 @@ pub struct Meal {
     id: Uuid,
     photos: Option<String>,
     description: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Item, Clone, Default)]
+struct Health {
+    healthy: bool,
+    version: String,
 }
