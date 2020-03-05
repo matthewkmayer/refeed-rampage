@@ -4,7 +4,7 @@ use seed::{browser::service::fetch, prelude::*, *};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-static URL_BASE: &'static str = include_str!("api_loc.txt");
+static URL_BASE: &str = include_str!("api_loc.txt");
 
 type MealMap = Vec<Meal>;
 
