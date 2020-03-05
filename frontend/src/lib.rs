@@ -1,19 +1,10 @@
 #![allow(clippy::large_enum_variant)]
 
-use lazy_static::lazy_static;
 use seed::{browser::service::fetch, prelude::*, *};
 use serde::{Deserialize, Serialize};
-use std::env;
 use uuid::Uuid;
 
-lazy_static! {
-    static ref URL_BASE: String = {
-        match env::var("RRMEALS_API") {
-            Ok(l) => l,
-            Err(_) => "http://127.0.0.1:3030".to_string(),
-        }
-    };
-}
+static URL_BASE: &'static str = include_str!("api_loc.txt");
 
 type MealMap = Vec<Meal>;
 

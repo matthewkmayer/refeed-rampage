@@ -636,7 +636,6 @@ name = "frontend"
 version = "0.1.0"
 dependencies = [
  "futures 0.3.4",
- "lazy_static",
  "seed",
  "serde",
  "serde_json",
