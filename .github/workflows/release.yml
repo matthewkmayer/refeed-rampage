@@ -29,5 +29,5 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - run: cd frontend && cargo build --release && npx wasm-pack build  --target web --out-name package
+      - run: cd frontend && cargo build --release && npx wasm-pack build --target web --out-name package
       - run: echo "Would have deployed frontend"
