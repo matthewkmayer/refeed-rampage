@@ -263,7 +263,62 @@ fn json_body() -> impl Filter<Extract = (Meal,), Error = warp::Rejection> + Clon
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }
 
+async fn is_db_avail() -> bool {
+    let client = DynamoDbClient::new(Region::Custom {
+        name: "us-east-1".into(),                 // TODO: extract to static
+        endpoint: "http://localhost:8000".into(), // TODO: extract to static
+    })
+    .with_retries(Policy::default());
+    let table_name = "meals".to_string();
+    let create_table_req = client.create_table(CreateTableInput {
+        table_name,
+        key_schema: vec![KeySchemaElement {
+            attribute_name: "id".into(),
+            key_type: "HASH".into(),
+        }],
+        attribute_definitions: vec![AttributeDefinition {
+            attribute_name: "id".into(),
+            attribute_type: "S".into(),
+        }],
+        provisioned_throughput: Some(ProvisionedThroughput {
+            read_capacity_units: 1,
+            write_capacity_units: 1,
+        }),
+        ..CreateTableInput::default()
+    });
+    debug!("Gonna run a future");
+    let f = create_table_req.sync();
+    match f {
+        Ok(_) => {
+            debug!("All good making table");
+            true
+        }
+        Err(e) => {
+            // local one may not be ready yet, wait and retry:
+            if !e.to_string().contains("preexisting table") {
+                return false;
+            }
+            true
+        }
+    }
+}
+
 async fn prepopulate_db() {
+    let mut attempts = 0;
+    loop {
+        debug!("Waiting for the db to be available");
+        if is_db_avail().await {
+            debug!("DB is available");
+            break;
+        }
+        if attempts > 10 {
+            debug!("DB is not available after 10 attempts, we're out");
+            panic!("Stopped waiting for the DB to become available");
+        }
+        attempts += 1;
+        debug!("sleeping for a minute and retrying");
+        std::thread::sleep(std::time::Duration::from_millis(5_000));
+    }
     // how about a database liveness check? Keep prodding until it's ready.
     let client = DynamoDbClient::new(Region::Custom {
         name: "us-east-1".into(),
@@ -292,35 +347,7 @@ async fn prepopulate_db() {
     match f {
         Ok(_) => debug!("All good making table"),
         Err(e) => {
-            debug!("Issue creating table: {:?}", e);
-            // local one may not be ready yet, wait and retry:
-            if !e.to_string().contains("preexisting table") {
-                debug!("sleeping for a minute and retrying");
-                std::thread::sleep(std::time::Duration::from_millis(10_000));
-                let create_table_req = client.create_table(CreateTableInput {
-                    table_name: table_name.clone(),
-                    key_schema: vec![KeySchemaElement {
-                        attribute_name: "id".into(),
-                        key_type: "HASH".into(),
-                    }],
-                    attribute_definitions: vec![AttributeDefinition {
-                        attribute_name: "id".into(),
-                        attribute_type: "S".into(),
-                    }],
-                    provisioned_throughput: Some(ProvisionedThroughput {
-                        read_capacity_units: 1,
-                        write_capacity_units: 1,
-                    }),
-                    ..CreateTableInput::default()
-                });
-                match create_table_req.sync() {
-                    Ok(_) => info!("it got better"),
-                    Err(e) => panic!( // return to error! after debugging
-                        "failed to find dynamodb on second attempt, bailing. Error: {:?}",
-                        e
-                    ),
-                }
-            }
+            debug!("Issue creating table: {:?}. Forging ahead anyways.", e);
         }
     }
 

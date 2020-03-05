@@ -6,6 +6,7 @@ Description=Rampage backend
 [Service]
 Type=simple
 WorkingDirectory=/app
+Environment="RUST_LOG='backend'"
 ExecStart=/app/backend
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
