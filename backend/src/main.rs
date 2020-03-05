@@ -119,13 +119,17 @@ async fn healthy() -> Result<impl warp::Reply, Infallible> {
     Ok(warp::reply::with_status(r, StatusCode::OK))
 }
 
-async fn specific_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
-    // we should pass one of these around instead of recreating it
-    let client = DynamoDbClient::new(Region::Custom {
+fn get_dynamodb_client() -> dynomite::retry::RetryingDynamoDb<DynamoDbClient> {
+    DynamoDbClient::new(Region::Custom {
         name: "us-east-1".into(),
         endpoint: "http://localhost:8000".into(),
     })
-    .with_retries(Policy::default());
+    .with_retries(Policy::default())
+}
+
+async fn specific_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
+    // we should pass one of these around instead of recreating it
+    let client = get_dynamodb_client();
     let m = Meal {
         id: i,
         ..Default::default()
@@ -152,11 +156,7 @@ async fn specific_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
 
 async fn update_meal(_id: Uuid, create: Meal) -> Result<impl warp::Reply, Infallible> {
     // make sure _id matches create.id
-    let client = DynamoDbClient::new(Region::Custom {
-        name: "us-east-1".into(),
-        endpoint: "http://localhost:8000".into(),
-    })
-    .with_retries(Policy::default());
+    let client = get_dynamodb_client();
 
     let d_result = client
         .put_item(PutItemInput {
@@ -181,11 +181,7 @@ async fn update_meal(_id: Uuid, create: Meal) -> Result<impl warp::Reply, Infall
 
 // wow it's... not great
 async fn all_meals() -> Result<impl warp::Reply, Infallible> {
-    let client = DynamoDbClient::new(Region::Custom {
-        name: "us-east-1".into(),
-        endpoint: "http://localhost:8000".into(),
-    })
-    .with_retries(Policy::default());
+    let client = get_dynamodb_client();
 
     let scan_all_things = client
         .scan(ScanInput {
@@ -222,11 +218,7 @@ async fn all_meals() -> Result<impl warp::Reply, Infallible> {
 pub async fn create_meal(create: Meal) -> Result<impl warp::Reply, Infallible> {
     log::debug!("create_meal: {:?}", create);
 
-    let client = DynamoDbClient::new(Region::Custom {
-        name: "us-east-1".into(),
-        endpoint: "http://localhost:8000".into(),
-    })
-    .with_retries(Policy::default());
+    let client = get_dynamodb_client();
 
     let newone = Meal {
         id: Uuid::new_v4(),
@@ -264,11 +256,7 @@ fn json_body() -> impl Filter<Extract = (Meal,), Error = warp::Rejection> + Clon
 }
 
 async fn is_db_avail() -> bool {
-    let client = DynamoDbClient::new(Region::Custom {
-        name: "us-east-1".into(),                 // TODO: extract to static
-        endpoint: "http://localhost:8000".into(), // TODO: extract to static
-    })
-    .with_retries(Policy::default());
+    let client = get_dynamodb_client();
     let table_name = "meals".to_string();
     let create_table_req = client.create_table(CreateTableInput {
         table_name,
@@ -319,12 +307,7 @@ async fn prepopulate_db() {
         debug!("sleeping for a minute and retrying");
         std::thread::sleep(std::time::Duration::from_millis(5_000));
     }
-    // how about a database liveness check? Keep prodding until it's ready.
-    let client = DynamoDbClient::new(Region::Custom {
-        name: "us-east-1".into(),
-        endpoint: "http://localhost:8000".into(),
-    })
-    .with_retries(Policy::default());
+    let client = get_dynamodb_client();
     let table_name = "meals".to_string();
     let create_table_req = client.create_table(CreateTableInput {
         table_name: table_name.clone(),
