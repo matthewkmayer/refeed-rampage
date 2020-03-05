@@ -477,13 +477,13 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
 // https://seed-rs.org/guide/http-requests-and-state
 
 async fn fetch_meals() -> Result<Msg, Msg> {
-    let url = format!("{}/meals", URL_BASE.to_string());
+    let url = format!("{}/meals", URL_BASE);
     log!(format!("url is {}", url));
     Request::new(url).fetch_json_data(Msg::MealsFetched).await
 }
 
 async fn delete_meal(id: Uuid) -> Result<Msg, Msg> {
-    let url = format!("{}/meals/{}", URL_BASE.to_string(), id);
+    let url = format!("{}/meals/{}", URL_BASE, id);
     log!(format!("url is {}", url));
     Request::new(url)
         .method(Method::Delete)
@@ -492,7 +492,7 @@ async fn delete_meal(id: Uuid) -> Result<Msg, Msg> {
 }
 
 async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
-    let url = format!("{}/meals", URL_BASE.to_string());
+    let url = format!("{}/meals", URL_BASE);
     log!(format!("Sending something to {}", url));
     Request::new(url)
         .method(Method::Post)
@@ -502,7 +502,7 @@ async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
 }
 
 async fn update_meal(meal: Meal) -> Result<Msg, Msg> {
-    let url = format!("{}/meals/{}", URL_BASE.to_string(), meal.id);
+    let url = format!("{}/meals/{}", URL_BASE, meal.id);
     log!(format!("Sending something to {}", url));
     Request::new(url)
         .method(Method::Put)
