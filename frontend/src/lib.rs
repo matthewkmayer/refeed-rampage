@@ -1,8 +1,19 @@
 #![allow(clippy::large_enum_variant)]
 
+use lazy_static::lazy_static;
 use seed::{browser::service::fetch, prelude::*, *};
 use serde::{Deserialize, Serialize};
+use std::env;
 use uuid::Uuid;
+
+lazy_static! {
+    static ref URL_BASE: String = {
+        match env::var("RRMEALS_API") {
+            Ok(l) => l,
+            Err(_) => "http://127.0.0.1:3030".to_string(),
+        }
+    };
+}
 
 type MealMap = Vec<Meal>;
 
@@ -475,12 +486,14 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
 // https://seed-rs.org/guide/http-requests-and-state
 
 async fn fetch_meals() -> Result<Msg, Msg> {
-    let url = "http://127.0.0.1:3030/meals";
+    let url = format!("{}/meals", URL_BASE.to_string());
+    log!(format!("url is {}", url));
     Request::new(url).fetch_json_data(Msg::MealsFetched).await
 }
 
 async fn delete_meal(id: Uuid) -> Result<Msg, Msg> {
-    let url = format!("http://127.0.0.1:3030/meals/{}", id);
+    let url = format!("{}/meals/{}", URL_BASE.to_string(), id);
+    log!(format!("url is {}", url));
     Request::new(url)
         .method(Method::Delete)
         .fetch_json_data(Msg::MealDeleted)
@@ -488,7 +501,7 @@ async fn delete_meal(id: Uuid) -> Result<Msg, Msg> {
 }
 
 async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
-    let url = "http://127.0.0.1:3030/meals/";
+    let url = format!("{}/meals", URL_BASE.to_string());
     log!(format!("Sending something to {}", url));
     Request::new(url)
         .method(Method::Post)
@@ -498,7 +511,7 @@ async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
 }
 
 async fn update_meal(meal: Meal) -> Result<Msg, Msg> {
-    let url = format!("http://127.0.0.1:3030/meals/{}", meal.id);
+    let url = format!("{}/meals/{}", URL_BASE.to_string(), meal.id);
     log!(format!("Sending something to {}", url));
     Request::new(url)
         .method(Method::Put)
@@ -508,7 +521,7 @@ async fn update_meal(meal: Meal) -> Result<Msg, Msg> {
 }
 
 async fn fetch_meal(id: Uuid) -> Result<Msg, Msg> {
-    let url = format!("http://127.0.0.1:3030/meals/{}", id);
+    let url = format!("{}/meals/{}", URL_BASE.to_string(), id);
     Request::new(url).fetch_json_data(Msg::MealFetched).await
 }
 
