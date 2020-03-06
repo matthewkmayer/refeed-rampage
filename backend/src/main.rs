@@ -33,7 +33,7 @@ async fn main() {
         .allow_methods(vec!["GET", "POST", "DELETE", "PUT"])
         .allow_headers(vec!["content-type"]);
 
-    let routes = meal_filters().with(&cors).with(warp::log("meals"));
+    let routes = meal_filters().with(&cors).with(warp::log("backend"));
 
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }
