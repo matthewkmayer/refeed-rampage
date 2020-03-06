@@ -17,8 +17,8 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - run: echo ${{ secrets.DEPLOYSSH }} > ~/.ssh/id_rsa
-      - run: echo ${{ secrets.DEPLOYSSHPW }} | ssh-add -p keyfile
+      - run: echo ${{ secrets.DEPLOYSSH }} > id_rsa
+      - run: echo ${{ secrets.DEPLOYSSHPW }} | ssh-add -p id_rsa
       - run: cd backend && cargo build --release
       - run: ls
       - run: pwd
