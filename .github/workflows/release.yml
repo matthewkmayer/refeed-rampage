@@ -17,6 +17,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      # - run: echo "" > backend/src/ddb_loc.txt
       - run: cd backend && cargo build --release
       - uses: appleboy/scp-action@master
         with:

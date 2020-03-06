@@ -17,6 +17,8 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
+static DYNAMODB_LOC: &str = include_str!("ddb_loc.txt");
+
 #[tokio::main]
 async fn main() {
     pretty_env_logger::init();
@@ -80,11 +82,7 @@ fn meal_update() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reject
 
 // curl -i -X DELETE http://localhost:3030/meals/1
 async fn delete_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
-    let client = DynamoDbClient::new(Region::Custom {
-        name: "us-east-1".into(),
-        endpoint: "http://localhost:8000".into(),
-    })
-    .with_retries(Policy::default());
+    let client = get_dynamodb_client();
     let m = Meal {
         id: i,
         ..Default::default()
@@ -119,12 +117,16 @@ async fn healthy() -> Result<impl warp::Reply, Infallible> {
     Ok(warp::reply::with_status(r, StatusCode::OK))
 }
 
+// handle local vs "real" dynamodb
 fn get_dynamodb_client() -> dynomite::retry::RetryingDynamoDb<DynamoDbClient> {
-    DynamoDbClient::new(Region::Custom {
-        name: "us-east-1".into(),
-        endpoint: "http://localhost:8000".into(),
-    })
-    .with_retries(Policy::default())
+    match DYNAMODB_LOC.len() {
+        0 => DynamoDbClient::new(Region::UsWest2).with_retries(Policy::default()),
+        _ => DynamoDbClient::new(Region::Custom {
+            name: "us-west-2".into(),
+            endpoint: DYNAMODB_LOC.into(),
+        })
+        .with_retries(Policy::default()),
+    }
 }
 
 async fn specific_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
