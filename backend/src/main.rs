@@ -121,12 +121,18 @@ async fn healthy() -> Result<impl warp::Reply, Infallible> {
 // handle local vs "real" dynamodb
 fn get_dynamodb_client() -> dynomite::retry::RetryingDynamoDb<DynamoDbClient> {
     match DYNAMODB_LOC.len() {
-        0 => DynamoDbClient::new(Region::UsWest2).with_retries(Policy::default()),
-        _ => DynamoDbClient::new(Region::Custom {
-            name: "us-east-1".into(), // local testing only
-            endpoint: DYNAMODB_LOC.into(),
-        })
-        .with_retries(Policy::default()),
+        0 => {
+            info!("Using real Dynamodb");
+            DynamoDbClient::new(Region::UsWest2).with_retries(Policy::default())
+        }
+        _ => {
+            info!("Using local Dynamodb");
+            DynamoDbClient::new(Region::Custom {
+                name: "us-east-1".into(), // local testing only
+                endpoint: DYNAMODB_LOC.into(),
+            })
+            .with_retries(Policy::default())
+        }
     }
 }
 
