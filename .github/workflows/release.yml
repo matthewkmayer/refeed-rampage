@@ -48,6 +48,8 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - run: echo "https://rampage.screaming3d.com" > frontend/src/api_loc.txt
+      - run: cat frontend/src/api_loc.txt
       - run: cd frontend && cargo build --release && npx wasm-pack build --target web --out-name package
       - uses: appleboy/scp-action@master
         with:
