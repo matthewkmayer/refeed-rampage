@@ -2,10 +2,7 @@
 
 ## Lightsail
 
-* spin up lightsail instance
-* install and configure nginx
 * install certbot
-* manually deploy frontend, make sure things work
 * manually deploy backend
 * clicky clicky testing
 * set up ssh key for a user that can upload things to nginx

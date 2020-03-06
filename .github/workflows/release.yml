@@ -17,8 +17,13 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - run: echo ${{ secrets.DEPLOYSSH }} > ~/.ssh/id_rsa
+      - run: echo ${{ secrets.DEPLOYSSHPW }} | ssh-add -p keyfile
       - run: cd backend && cargo build --release
-      - run: echo "Would have deployed backend"
+      - run: ls
+      - run: pwd
+      - run: scp -v target/release/backend ubuntu:34.220.223.217:~/
+      - run: echo  "run deploy script on destination"
   release-frontend-build:
     name: release-frontend-build
     runs-on: ubuntu-latest
