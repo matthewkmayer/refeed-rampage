@@ -123,7 +123,7 @@ fn get_dynamodb_client() -> dynomite::retry::RetryingDynamoDb<DynamoDbClient> {
     match DYNAMODB_LOC.len() {
         0 => DynamoDbClient::new(Region::UsWest2).with_retries(Policy::default()),
         _ => DynamoDbClient::new(Region::Custom {
-            name: "us-west-2".into(),
+            name: "us-east-2".into(), // local testing only
             endpoint: DYNAMODB_LOC.into(),
         })
         .with_retries(Policy::default()),
