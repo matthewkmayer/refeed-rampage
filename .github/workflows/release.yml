@@ -17,13 +17,18 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - run: echo ${{ secrets.DEPLOYSSH }} > id_rsa
-      - run: echo ${{ secrets.DEPLOYSSHPW }} | ssh-add -p id_rsa
       - run: cd backend && cargo build --release
       - run: ls
       - run: pwd
-      - run: scp -v target/release/backend ubuntu:34.220.223.217:~/
-      - run: echo  "run deploy script on destination"
+      - uses: appleboy/scp-action@master
+        with:
+        host: 34.220.223.217
+        username: ubuntu
+        key: ${{ secrets.DEPLOYSSH }}
+        password: ${{ secrets.DEPLOYSSHPW }}
+        port: 22
+        source: "target/release/backend"
+        target: "backend"
   release-frontend-build:
     name: release-frontend-build
     runs-on: ubuntu-latest
