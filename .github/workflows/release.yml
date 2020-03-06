@@ -29,6 +29,19 @@ jobs:
           port: 22
           source: "target/release/backend"
           target: "."
+      - uses: appleboy/ssh-action@master
+        with:
+          host: 34.220.223.217
+          username: ubuntu
+          key: ${{ secrets.DEPLOYSSH }}
+          passphrase: ${{ secrets.DEPLOYSSHPW }}
+          port: 22
+          script: |
+            pwd
+            ls
+            sudo mv /app/backend /app/backend_old
+            sudo cp ./target/release/backend /app/backend
+            sudo systemctl restart rrmeals
   release-frontend-build:
     name: release-frontend-build
     runs-on: ubuntu-latest
@@ -40,4 +53,12 @@ jobs:
           toolchain: stable
           override: true
       - run: cd frontend && cargo build --release && npx wasm-pack build --target web --out-name package
-      - run: echo "Would have deployed frontend"
+      - uses: appleboy/scp-action@master
+        with:
+          host: 34.220.223.217
+          username: ubuntu
+          key: ${{ secrets.DEPLOYSSH }}
+          passphrase: ${{ secrets.DEPLOYSSHPW }}
+          port: 22
+          source: "frontend/pkg/*,frontend/index.html"
+          target: "frontend"
