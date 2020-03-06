@@ -25,7 +25,7 @@ jobs:
           host: 34.220.223.217
           username: ubuntu
           key: ${{ secrets.DEPLOYSSH }}
-          password: ${{ secrets.DEPLOYSSHPW }}
+          passphrase: ${{ secrets.DEPLOYSSHPW }}
           port: 22
           # source: "target/release/backend"
           source: "README.md"
