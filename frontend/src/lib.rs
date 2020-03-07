@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 static URL_BASE: &str = include_str!("api_loc.txt");
+static GITBITS: &str = include_str!("gitbits.txt");
 
 type MealMap = Vec<Meal>;
 
@@ -270,10 +271,24 @@ fn view(model: &Model) -> impl View<Msg> {
     };
     let main = main![
         class!["container"],
-        div![class!["jumbotron"], page_contents,],
+        div![class!["jumbotron"], page_contents],
     ];
 
-    vec![nav(model), main]
+    vec![nav(model), main, footer()]
+}
+
+fn footer() -> Node<Msg> {
+    let version_txt = match GITBITS.len() {
+        0 => "dev",
+        _ => GITBITS,
+    };
+    footer![
+        class!["text-muted"],
+        div![
+            class!["container"],
+            p![class!["float-right"], format!("version: {}", version_txt)]
+        ]
+    ]
 }
 
 fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {

@@ -50,7 +50,8 @@ jobs:
           toolchain: stable
           override: true
       - run: echo "https://rampage.screaming3d.com/api" > frontend/src/api_loc.txt
-      - run: cat frontend/src/api_loc.txt
+      - run: echo ${{ github.ref }} > frontend/src/gitbits.txt
+      - run: cat frontend/src/gitbits.txt
       - run: cd frontend && cargo build --release && npx wasm-pack build --target web --out-name package
       - uses: appleboy/scp-action@master
         with:
