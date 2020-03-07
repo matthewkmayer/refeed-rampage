@@ -59,7 +59,7 @@ jobs:
           key: ${{ secrets.DEPLOYSSH }}
           passphrase: ${{ secrets.DEPLOYSSHPW }}
           port: 22
-          source: "frontend/pkg/*,frontend/index.html"
+          source: "frontend/pkg/*,frontend/index.html,frontend/favicon.ico"
           target: "frontend"
       - uses: appleboy/ssh-action@master
         with:
