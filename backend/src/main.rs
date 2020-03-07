@@ -18,6 +18,7 @@ extern crate pretty_env_logger;
 extern crate log;
 
 static DYNAMODB_LOC: &str = include_str!("ddb_loc.txt");
+static GITBITS: &str = include_str!("gitbits.txt"); //a
 
 #[tokio::main]
 async fn main() {
@@ -110,9 +111,13 @@ async fn delete_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
 }
 
 async fn healthy() -> Result<impl warp::Reply, Infallible> {
+    let version_txt = match GITBITS.len() {
+        0 => "dev",
+        _ => GITBITS,
+    };
     let h = Health {
         healthy: true,
-        version: "v.0.0.1-whatever".to_string(), // should have git hash in here later
+        version: version_txt.to_string(),
     };
     let r = warp::reply::json(&h);
     Ok(warp::reply::with_status(r, StatusCode::OK))
@@ -283,7 +288,6 @@ async fn is_db_avail() -> bool {
         }),
         ..CreateTableInput::default()
     });
-    debug!("Gonna run a future");
     let f = create_table_req.sync();
     match f {
         Ok(_) => {
@@ -334,7 +338,6 @@ async fn prepopulate_db() {
         }),
         ..CreateTableInput::default()
     });
-    debug!("Gonna run a future");
     let f = create_table_req.sync();
     match f {
         Ok(_) => debug!("All good making table"),
