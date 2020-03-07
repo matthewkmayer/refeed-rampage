@@ -17,7 +17,8 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      # - run: echo "" > backend/src/ddb_loc.txt
+      # - run: echo "" > backend/src/ddb_loc.txt # for using real dynamodb
+      - run: echo ${{ github.ref }} | sed -e 's#refs/tags/##' > backend/src/gitbits.txt
       - run: cd backend && cargo build --release
       - uses: appleboy/scp-action@master
         with:
@@ -50,8 +51,7 @@ jobs:
           toolchain: stable
           override: true
       - run: echo "https://rampage.screaming3d.com/api" > frontend/src/api_loc.txt
-      - run: echo ${{ github.ref }} > frontend/src/gitbits.txt
-      - run: cat frontend/src/gitbits.txt
+      - run: echo ${{ github.ref }} | sed -e 's#refs/tags/##' > frontend/src/gitbits.txt
       - run: cd frontend && cargo build --release && npx wasm-pack build --target web --out-name package
       - uses: appleboy/scp-action@master
         with:
