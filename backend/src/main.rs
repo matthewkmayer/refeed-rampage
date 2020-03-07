@@ -112,12 +112,12 @@ async fn delete_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
 
 async fn healthy() -> Result<impl warp::Reply, Infallible> {
     let version_txt = match GITBITS.len() {
-        0 => "dev",
-        _ => GITBITS,
+        0 => "dev".to_string(),
+        _ => GITBITS.to_string().replace('\n', ""),
     };
     let h = Health {
         healthy: true,
-        version: version_txt.to_string(),
+        version: version_txt,
     };
     let r = warp::reply::json(&h);
     Ok(warp::reply::with_status(r, StatusCode::OK))
