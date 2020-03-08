@@ -19,12 +19,6 @@ struct Model {
     login: Option<LoginInput>,
 }
 
-#[derive(Serialize, Clone, Debug)]
-struct LoginInput {
-    user: String,
-    pw: String,
-}
-
 #[derive(Clone, Debug, PartialEq)]
 enum Pages {
     Home,
@@ -105,17 +99,33 @@ enum Msg {
     LoginUserUpdated(String),
     LoginPwUpdated(String),
     Login { login: Option<LoginInput> },
+    LoginResp(seed::fetch::ResponseDataResult<LoginResp>),
 }
 
 /// How we update the model
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     // TODO: move these around to group like things together
     match msg {
+        Msg::LoginResp(l) => {
+            match l {
+                Ok(login_ok) => {
+                    log!(format!("Everything was gravy, loginok is {:?}", login_ok));
+                    model.error = None;
+                    // save jwt
+                    let storage = seed::storage::get_storage().unwrap();
+                    seed::storage::store_data(&storage, "authjwt", &login_ok);
+                }
+                Err(e) => {
+                    log!(format!("Couldn't log in: {:?}", e));
+                    model.error = Some("Login failed.".to_string());
+                }
+            }
+        }
         Msg::Login { login: lin } => match lin {
-            Some(_l) => {
+            Some(l) => {
                 log!("Got something to send");
                 model.error = None;
-                // log!(format!("Sending {:?}", l));
+                orders.skip().perform_cmd(login(l));
             }
             None => {
                 log!("No login info to send");
@@ -584,6 +594,16 @@ async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
         .await
 }
 
+async fn login(login: LoginInput) -> Result<Msg, Msg> {
+    let url = format!("{}/login", URL_BASE,);
+    log!(format!("Sending something to {}", url));
+    Request::new(url)
+        .method(Method::Post)
+        .send_json(&login)
+        .fetch_json_data(Msg::LoginResp)
+        .await
+}
+
 async fn update_meal(meal: Meal) -> Result<Msg, Msg> {
     let url = format!("{}/meals/{}", URL_BASE, meal.id);
     log!(format!("Sending something to {}", url));
@@ -694,4 +714,15 @@ impl Meal {
         }
         true
     }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+struct LoginResp {
+    jwt: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct LoginInput {
+    user: String,
+    pw: String,
 }
