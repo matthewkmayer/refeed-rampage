@@ -6,9 +6,10 @@ use dynomite::{
     retry::Policy,
     FromAttributes, Item, Retries,
 };
-use jsonwebtoken::{encode, EncodingKey, Header};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rusoto_core::Region;
 use serde_derive::{Deserialize, Serialize};
+use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 use warp::http::StatusCode;
 use warp::Filter;
@@ -33,7 +34,7 @@ async fn main() {
         .allow_origin("http://127.0.0.1:8080")
         .allow_origin("https://rampage.screaming3d.com")
         .allow_methods(vec!["GET", "POST", "DELETE", "PUT"])
-        .allow_headers(vec!["content-type"]);
+        .allow_headers(vec!["content-type", "Authorization"]);
 
     let routes = meal_filters().with(&cors).with(warp::log("backend"));
 
@@ -87,6 +88,7 @@ fn meal_delete() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reject
 fn meal_update() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("meals" / Uuid)
         .and(warp::put())
+        .and(warp::header::<String>("Authorization")) // this should be an auth filter instead of making the handler do the work
         .and(json_meal_body())
         .and_then(update_meal)
 }
@@ -180,7 +182,19 @@ async fn specific_meal(i: Uuid) -> Result<Box<dyn warp::Reply>, warp::Rejection>
     )))
 }
 
-async fn update_meal(_id: Uuid, create: Meal) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+async fn update_meal(
+    _id: Uuid,
+    auth: String,
+    create: Meal,
+) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+    info!("auth we got: {:?}", auth);
+    if !is_authed(auth) {
+        let r = warp::reply::json(&());
+        return Ok(Box::new(warp::reply::with_status(
+            r,
+            StatusCode::UNAUTHORIZED,
+        )));
+    }
     // make sure _id matches create.id
     let client = get_dynamodb_client();
 
@@ -193,7 +207,6 @@ async fn update_meal(_id: Uuid, create: Meal) -> Result<Box<dyn warp::Reply>, wa
         .sync();
     match d_result {
         Ok(_) => {
-            info!("aww yiss added it");
             let r = warp::reply::json(&create);
             Ok(Box::new(warp::reply::with_status(r, StatusCode::ACCEPTED)))
         }
@@ -285,9 +298,14 @@ pub async fn login(login: Login) -> Result<Box<dyn warp::Reply>, warp::Rejection
 
     if login.user == "foo" && login.pw == "bar" {
         debug!("Successful login");
-        // make a jwt
+        // yeah should probably handle errors
+        let in_future = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            + 10_000_000; // forever-ish
         let claims = Claims {
-            exp: 0,
+            exp: in_future as u32,
             sub: login.user,
         };
         let token = encode(
@@ -429,6 +447,27 @@ async fn prepopulate_db(
             ..PutItemInput::default()
         })
         .sync();
+}
+
+fn is_authed(auth: String) -> bool {
+    debug!("Checking this jwt: {}", auth);
+    let a = auth.replace("bearer: ", "");
+    let token = decode::<Claims>(
+        &a,
+        &DecodingKey::from_secret("secret".as_ref()),
+        &Validation::default(),
+    );
+    match token {
+        Ok(_) => {
+            debug!("Token is a-okay");
+            // check the database for it
+            true
+        }
+        Err(e) => {
+            debug!("Token no good: {:?}", e);
+            false
+        }
+    }
 }
 
 #[derive(Serialize)]

@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 static URL_BASE: &str = include_str!("api_loc.txt");
 static GITBITS: &str = include_str!("gitbits.txt");
+const ENTER_KEY: u32 = 13;
 
 type MealMap = Vec<Meal>;
 
@@ -17,6 +18,7 @@ struct Model {
     error: Option<String>,
     page: Pages,
     login: Option<LoginInput>,
+    auth: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -48,6 +50,7 @@ impl Default for Model {
                 photos: None,
             },
             login: None,
+            auth: None,
         }
     }
 }
@@ -78,6 +81,7 @@ struct MealDeletedResponse {}
 // Update
 #[derive(Clone, Debug)]
 enum Msg {
+    NoOp,
     // editing
     EditMeal { meal_id: Uuid },
     MealCreateUpdateName(String),
@@ -100,32 +104,41 @@ enum Msg {
     LoginPwUpdated(String),
     Login { login: Option<LoginInput> },
     LoginResp(seed::fetch::ResponseDataResult<LoginResp>),
+    LoginFromTxt,
 }
 
 /// How we update the model
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     // TODO: move these around to group like things together
     match msg {
-        Msg::LoginResp(l) => {
-            match l {
-                Ok(login_ok) => {
-                    log!(format!("Everything was gravy, loginok is {:?}", login_ok));
-                    model.error = None;
-                    // save jwt
-                    let storage = seed::storage::get_storage().unwrap();
-                    seed::storage::store_data(&storage, "authjwt", &login_ok);
-                }
-                Err(e) => {
-                    log!(format!("Couldn't log in: {:?}", e));
-                    model.error = Some("Login failed.".to_string());
-                }
+        Msg::LoginFromTxt => match &model.login {
+            Some(a) => {
+                orders.send_msg(Msg::Login {
+                    login: Some(a.clone()),
+                });
             }
-        }
-        Msg::Login { login: lin } => match lin {
-            Some(l) => {
-                log!("Got something to send");
+            None => log!("doot"),
+        },
+        Msg::NoOp => (),
+        Msg::LoginResp(l) => match l {
+            Ok(login_ok) => {
+                log!(format!("Everything was gravy, loginok is {:?}", login_ok));
                 model.error = None;
+                let storage = seed::storage::get_storage().unwrap();
+                seed::storage::store_data(&storage, "authjwt", &login_ok);
+                model.auth = Some(login_ok.jwt);
+                orders.send_msg(Msg::ChangePage(Pages::Meals));
+            }
+            Err(e) => {
+                log!(format!("Couldn't log in: {:?}", e));
+                model.error = Some("Login failed.".to_string());
+                model.auth = None;
+            }
+        },
+        Msg::Login { login: logindeets } => match logindeets {
+            Some(l) => {
                 orders.skip().perform_cmd(login(l));
+                model.error = None;
             }
             None => {
                 log!("No login info to send");
@@ -154,7 +167,10 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!("updating existing meal");
             if meal.ready_to_submit() {
                 log!("ready to submit!");
-                orders.skip().perform_cmd(update_meal(meal));
+                orders
+                    .skip()
+                    .perform_cmd(update_meal(meal, model.auth.clone().unwrap()));
+            // less unwrap please
             } else {
                 log!("error before save submission");
                 model.error = Some("provide a meal first".to_string());
@@ -171,7 +187,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             orders.send_msg(Msg::ChangePage(Pages::Meals));
         }
         Msg::DeleteMeal { meal_id: id } => {
-            orders.skip().perform_cmd(delete_meal(id));
+            orders
+                .skip()
+                .perform_cmd(delete_meal(id, model.auth.clone().unwrap()));
         }
         Msg::MealValidationError => {
             log!("validation fail");
@@ -195,7 +213,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log("creating a new meal");
             if model.meal_ready_to_submit() {
                 log!("ready to submit!");
-                orders.skip().perform_cmd(create_meal(meal));
+                orders
+                    .skip()
+                    .perform_cmd(create_meal(meal, model.auth.clone().unwrap()));
             } else {
                 log!("error before submission");
                 model.error = Some("provide a meal first".to_string());
@@ -283,38 +303,7 @@ fn view(model: &Model) -> impl View<Msg> {
             create_meal_view(model)
         }
         Pages::CreateMeal => create_meal_view(model),
-        Pages::Login => vec![
-            h2!["login"],
-            p![],
-            input![
-                class!["form-control col-4"],
-                attrs! {At::Type => "text", At::Placeholder => "username" },
-                id!["username"],
-                input_ev(Ev::Input, Msg::LoginUserUpdated),
-            ],
-            input![
-                class!["form-control col-4"],
-                attrs! {At::Type => "password", At::Placeholder => "password" },
-                id!["password"],
-                input_ev(Ev::Input, Msg::LoginPwUpdated),
-            ],
-            button![
-                "login",
-                simple_ev(
-                    Ev::Click,
-                    Msg::Login {
-                        login: model.login.clone()
-                    }
-                ),
-            ],
-            match &model.error {
-                Some(e) => p![format!(
-                    "Please enter a username and password. Error: {}",
-                    e
-                )],
-                None => empty![],
-            },
-        ],
+        Pages::Login => create_login_view(model),
         Pages::Meals => {
             log!("no meal id specific, show them all");
             let mut c = meal_list(model);
@@ -366,6 +355,48 @@ fn footer() -> Node<Msg> {
             class!["container"],
             p![class!["float-right"], format!("version: {}", version_txt)]
         ]
+    ]
+}
+
+fn create_login_view(model: &Model) -> Vec<Node<Msg>> {
+    vec![
+        h2!["login"],
+        p![],
+        input![
+            class!["form-control col-4"],
+            attrs! {At::Type => "text", At::Placeholder => "username" },
+            id!["username"],
+            input_ev(Ev::Input, Msg::LoginUserUpdated),
+        ],
+        input![
+            class!["form-control col-4"],
+            attrs! {At::Type => "password", At::Placeholder => "password" },
+            id!["password"],
+            keyboard_ev(Ev::KeyDown, |keyboard_event| {
+                if keyboard_event.key_code() == ENTER_KEY {
+                    log!("It's an enter key");
+                    return Msg::LoginFromTxt;
+                }
+                Msg::NoOp
+            }),
+            input_ev(Ev::Input, Msg::LoginPwUpdated),
+        ],
+        button![
+            "login",
+            simple_ev(
+                Ev::Click,
+                Msg::Login {
+                    login: model.login.clone()
+                }
+            ),
+        ],
+        match &model.error {
+            Some(e) => p![format!(
+                "Please enter a username and password. Error: {}",
+                e
+            )],
+            None => empty![],
+        },
     ]
 }
 
@@ -575,20 +606,22 @@ async fn fetch_meals() -> Result<Msg, Msg> {
     Request::new(url).fetch_json_data(Msg::MealsFetched).await
 }
 
-async fn delete_meal(id: Uuid) -> Result<Msg, Msg> {
+async fn delete_meal(id: Uuid, auth: String) -> Result<Msg, Msg> {
     let url = format!("{}/meals/{}", URL_BASE, id);
     log!(format!("url is {}", url));
     Request::new(url)
         .method(Method::Delete)
+        .header("Authorization", &format!("bearer: {}", auth))
         .fetch_json_data(Msg::MealDeleted)
         .await
 }
 
-async fn create_meal(meal: Meal) -> Result<Msg, Msg> {
+async fn create_meal(meal: Meal, auth: String) -> Result<Msg, Msg> {
     let url = format!("{}/meals", URL_BASE);
     log!(format!("Sending something to {}", url));
     Request::new(url)
         .method(Method::Post)
+        .header("Authorization", &format!("bearer: {}", auth))
         .send_json(&meal)
         .fetch_json_data(Msg::MealCreated)
         .await
@@ -604,11 +637,13 @@ async fn login(login: LoginInput) -> Result<Msg, Msg> {
         .await
 }
 
-async fn update_meal(meal: Meal) -> Result<Msg, Msg> {
+async fn update_meal(meal: Meal, auth: String) -> Result<Msg, Msg> {
     let url = format!("{}/meals/{}", URL_BASE, meal.id);
     log!(format!("Sending something to {}", url));
+    // add auth header
     Request::new(url)
         .method(Method::Put)
+        .header("Authorization", &format!("bearer: {}", auth))
         .send_json(&meal)
         .fetch_json_data(Msg::MealCreated)
         .await
