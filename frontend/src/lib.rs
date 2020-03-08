@@ -16,6 +16,13 @@ struct Model {
     meal: Meal,
     error: Option<String>,
     page: Pages,
+    login: Option<LoginInput>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+struct LoginInput {
+    user: String,
+    pw: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -46,6 +53,7 @@ impl Default for Model {
                 id: Uuid::new_v4(),
                 photos: None,
             },
+            login: None,
         }
     }
 }
@@ -93,12 +101,45 @@ enum Msg {
     FetchData { meal_id: Option<Uuid> },
     MealsFetched(fetch::ResponseDataResult<MealMap>),
     MealFetched(fetch::ResponseDataResult<Meal>),
+    // login
+    LoginUserUpdated(String),
+    LoginPwUpdated(String),
+    Login { login: Option<LoginInput> },
 }
 
 /// How we update the model
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     // TODO: move these around to group like things together
     match msg {
+        Msg::Login { login: lin } => match lin {
+            Some(_l) => {
+                log!("Got something to send");
+                model.error = None;
+                // log!(format!("Sending {:?}", l));
+            }
+            None => {
+                log!("No login info to send");
+                model.error = Some("Please enter a username and password".to_string());
+            }
+        },
+        Msg::LoginUserUpdated(u) => match model.login.as_mut() {
+            Some(m) => m.user = u,
+            None => {
+                model.login = Some(LoginInput {
+                    user: u,
+                    pw: "".to_string(),
+                })
+            }
+        },
+        Msg::LoginPwUpdated(pw) => match model.login.as_mut() {
+            Some(m) => m.pw = pw,
+            None => {
+                model.login = Some(LoginInput {
+                    user: "".to_string(),
+                    pw,
+                })
+            }
+        },
         Msg::SaveMeal(meal) => {
             log!("updating existing meal");
             if meal.ready_to_submit() {
@@ -235,7 +276,34 @@ fn view(model: &Model) -> impl View<Msg> {
         Pages::Login => vec![
             h2!["login"],
             p![],
-            p!["This will have authentication sometime."],
+            input![
+                class!["form-control col-4"],
+                attrs! {At::Type => "text", At::Placeholder => "username" },
+                id!["username"],
+                input_ev(Ev::Input, Msg::LoginUserUpdated),
+            ],
+            input![
+                class!["form-control col-4"],
+                attrs! {At::Type => "password", At::Placeholder => "password" },
+                id!["password"],
+                input_ev(Ev::Input, Msg::LoginPwUpdated),
+            ],
+            button![
+                "login",
+                simple_ev(
+                    Ev::Click,
+                    Msg::Login {
+                        login: model.login.clone()
+                    }
+                ),
+            ],
+            match &model.error {
+                Some(e) => p![format!(
+                    "Please enter a username and password. Error: {}",
+                    e
+                )],
+                None => empty![],
+            },
         ],
         Pages::Meals => {
             log!("no meal id specific, show them all");
