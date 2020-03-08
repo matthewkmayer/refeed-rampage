@@ -321,9 +321,8 @@ pub async fn create_meal(_: (), create: Meal) -> Result<Box<dyn warp::Reply>, wa
 
 // curl -i -X POST -d '{"user": "foo", "pw": "bar"}' -H "Content-type: application/json" localhost:3030/login
 pub async fn login(login: Login) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
-    debug!("Login is {:?}", login); // yes we need to obfuscate the password - override debug and print for the struct?
-
-    if login.user == "matthew" && login.pw == SECUREPW {
+    debug!("TEMPORARILY DOING THIS: expected pw is '{}'", SECUREPW);
+    if login.user == "matthew" && login.pw == SECUREPW.replace('\n', "") {
         debug!("Successful login");
         // yeah should probably handle errors
         let in_future = SystemTime::now()
@@ -351,6 +350,8 @@ pub async fn login(login: Login) -> Result<Box<dyn warp::Reply>, warp::Rejection
         Ok(Box::new(warp::reply::with_status(r, StatusCode::OK)))
     } else {
         debug!("Incorrect username/pw");
+        // we should see about leveraging nginx to also help with throttling to prevent brute force attempts
+        std::thread::sleep(std::time::Duration::from_millis(1_000));
         let r = warp::reply::json(&());
         Ok(Box::new(warp::reply::with_status(
             r,
