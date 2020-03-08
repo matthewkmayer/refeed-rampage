@@ -19,8 +19,7 @@ Tests for refeed rampage's frontend. End to end tests until a stubbed backend is
 
 ## Create a new meal
 
-* Goto refeed rampage home
-* Click "Meals"
+* Login with testing creds
 * Click "➕"
 * Fill out wings as a new meal
 * Page contains "wings"
@@ -28,8 +27,9 @@ Tests for refeed rampage's frontend. End to end tests until a stubbed backend is
 ## Edit an existing meal
 
 * Goto refeed rampage home
+* Login with testing creds
 * Click "Meals"
-* Click "✏️"
+* Click the edit button next to pizza
 * Update the name to "Thin Crust Pizza" and description to "Thin description"
 * Click "Save it"
 * Page contains "Thin Crust Pizza"
