@@ -8,7 +8,6 @@ use dynomite::{
 };
 use rusoto_core::Region;
 use serde_derive::{Deserialize, Serialize};
-use std::convert::Infallible;
 use uuid::Uuid;
 use warp::http::StatusCode;
 use warp::Filter;
@@ -83,7 +82,7 @@ fn meal_update() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reject
 }
 
 // curl -i -X DELETE http://localhost:3030/meals/1
-async fn delete_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
+async fn delete_meal(i: Uuid) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     let client = get_dynamodb_client();
     let m = Meal {
         id: i,
@@ -101,16 +100,16 @@ async fn delete_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
     match del {
         Ok(deleted_item) => {
             info!("item got deleted {:?}", deleted_item);
-            Ok(StatusCode::NO_CONTENT)
+            Ok(Box::new(StatusCode::NO_CONTENT))
         }
         Err(e) => {
             info!("item couldn't be deleted: {:?}", e);
-            Ok(StatusCode::BAD_REQUEST)
+            Ok(Box::new(StatusCode::BAD_REQUEST))
         }
     }
 }
 
-async fn healthy() -> Result<impl warp::Reply, Infallible> {
+async fn healthy() -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     let version_txt = match GITBITS.len() {
         0 => "dev".to_string(),
         _ => GITBITS.to_string().replace('\n', ""),
@@ -120,7 +119,7 @@ async fn healthy() -> Result<impl warp::Reply, Infallible> {
         version: version_txt,
     };
     let r = warp::reply::json(&h);
-    Ok(warp::reply::with_status(r, StatusCode::OK))
+    Ok(Box::new(warp::reply::with_status(r, StatusCode::OK)))
 }
 
 // handle local vs "real" dynamodb
@@ -141,7 +140,7 @@ fn get_dynamodb_client() -> dynomite::retry::RetryingDynamoDb<DynamoDbClient> {
     }
 }
 
-async fn specific_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
+async fn specific_meal(i: Uuid) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     // we should pass one of these around instead of recreating it
     let client = get_dynamodb_client();
     let m = Meal {
@@ -160,15 +159,18 @@ async fn specific_meal(i: Uuid) -> Result<impl warp::Reply, Infallible> {
         Ok(item_found) => {
             info!("success, item be all {:?}", item_found);
             let r = warp::reply::json(&item_found.unwrap().unwrap());
-            return Ok(warp::reply::with_status(r, StatusCode::OK));
+            return Ok(Box::new(warp::reply::with_status(r, StatusCode::OK)));
         }
         Err(e) => info!("It blew up :( {:?}", e),
     }
     let r = warp::reply::json(&());
-    Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST))
+    Ok(Box::new(warp::reply::with_status(
+        r,
+        StatusCode::BAD_REQUEST,
+    )))
 }
 
-async fn update_meal(_id: Uuid, create: Meal) -> Result<impl warp::Reply, Infallible> {
+async fn update_meal(_id: Uuid, create: Meal) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     // make sure _id matches create.id
     let client = get_dynamodb_client();
 
@@ -183,18 +185,21 @@ async fn update_meal(_id: Uuid, create: Meal) -> Result<impl warp::Reply, Infall
         Ok(_) => {
             info!("aww yiss added it");
             let r = warp::reply::json(&create);
-            Ok(warp::reply::with_status(r, StatusCode::ACCEPTED))
+            Ok(Box::new(warp::reply::with_status(r, StatusCode::ACCEPTED)))
         }
         Err(e) => {
             info!("blew up: {:?}", e);
             let r = warp::reply::json(&());
-            Ok(warp::reply::with_status(r, StatusCode::BAD_REQUEST))
+            Ok(Box::new(warp::reply::with_status(
+                r,
+                StatusCode::BAD_REQUEST,
+            )))
         }
     }
 }
 
 // wow it's... not great
-async fn all_meals() -> Result<impl warp::Reply, Infallible> {
+async fn all_meals() -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     let client = get_dynamodb_client();
 
     let scan_all_things = client
@@ -213,23 +218,23 @@ async fn all_meals() -> Result<impl warp::Reply, Infallible> {
                 .map(|result| Meal::from_attrs(result.clone()).unwrap())
                 .collect();
             let r = warp::reply::json(&doot);
-            Ok(warp::reply::with_status(r, StatusCode::OK))
+            Ok(Box::new(warp::reply::with_status(r, StatusCode::OK)))
         }
         Err(e) => {
             info!("nope: {:?}", e);
             let r = warp::reply::json(&ErrorResp {
                 error: e.to_string(),
             });
-            Ok(warp::reply::with_status(
+            Ok(Box::new(warp::reply::with_status(
                 r,
                 StatusCode::INTERNAL_SERVER_ERROR,
-            ))
+            )))
         }
     }
 }
 
 // should work with curl -i -X POST -H "content-type: application/json" -d '{"name":"Wings","id":3,"description":"mmm"}'  http://127.0.0.1:3030/meals/
-pub async fn create_meal(create: Meal) -> Result<impl warp::Reply, Infallible> {
+pub async fn create_meal(create: Meal) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     log::debug!("create_meal: {:?}", create);
 
     let client = get_dynamodb_client();
@@ -250,17 +255,17 @@ pub async fn create_meal(create: Meal) -> Result<impl warp::Reply, Infallible> {
         Ok(_) => {
             info!("aww yiss added it");
             let r = warp::reply::json(&newone);
-            Ok(warp::reply::with_status(r, StatusCode::CREATED))
+            Ok(Box::new(warp::reply::with_status(r, StatusCode::CREATED)))
         }
         Err(e) => {
             info!("blew up: {:?}", e);
             let r = warp::reply::json(&ErrorResp {
                 error: e.to_string(),
             });
-            Ok(warp::reply::with_status(
+            Ok(Box::new(warp::reply::with_status(
                 r,
                 StatusCode::INTERNAL_SERVER_ERROR,
-            ))
+            )))
         }
     }
 }
