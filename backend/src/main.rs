@@ -23,8 +23,9 @@ static GITBITS: &str = include_str!("gitbits.txt"); //a
 async fn main() {
     pretty_env_logger::init();
     info!("Firing up");
+    let c = get_dynamodb_client();
     // a bunch from https://github.com/seanmonstar/warp/blob/master/examples/todos.rs
-    prepopulate_db().await;
+    prepopulate_db(c.clone()).await;
 
     let cors = warp::cors()
         .allow_origin("http://localhost:8080")
@@ -201,7 +202,6 @@ async fn update_meal(_id: Uuid, create: Meal) -> Result<Box<dyn warp::Reply>, wa
 // wow it's... not great
 async fn all_meals() -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     let client = get_dynamodb_client();
-
     let scan_all_things = client
         .scan(ScanInput {
             table_name: "meals".to_string(),
@@ -274,8 +274,9 @@ fn json_body() -> impl Filter<Extract = (Meal,), Error = warp::Rejection> + Clon
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }
 
-async fn is_db_avail() -> bool {
-    let client = get_dynamodb_client();
+async fn is_db_avail(
+    client: dynomite::retry::RetryingDynamoDb<dynomite::dynamodb::DynamoDbClient>,
+) -> bool {
     let table_name = "meals".to_string();
     let create_table_req = client.create_table(CreateTableInput {
         table_name,
@@ -302,6 +303,7 @@ async fn is_db_avail() -> bool {
         Err(e) => {
             // local one may not be ready yet, wait and retry:
             if !e.to_string().contains("preexisting table") {
+                debug!("Table creation request failed: {}", e);
                 return false;
             }
             true
@@ -309,11 +311,13 @@ async fn is_db_avail() -> bool {
     }
 }
 
-async fn prepopulate_db() {
+async fn prepopulate_db(
+    client: dynomite::retry::RetryingDynamoDb<dynomite::dynamodb::DynamoDbClient>,
+) {
     let mut attempts = 0;
     loop {
         debug!("Waiting for the db to be available");
-        if is_db_avail().await {
+        if is_db_avail(client.clone()).await {
             debug!("DB is available");
             break;
         }
@@ -325,7 +329,6 @@ async fn prepopulate_db() {
         debug!("sleeping for a minute and retrying");
         std::thread::sleep(std::time::Duration::from_millis(5_000));
     }
-    let client = get_dynamodb_client();
     let table_name = "meals".to_string();
     let create_table_req = client.create_table(CreateTableInput {
         table_name: table_name.clone(),
