@@ -6,6 +6,7 @@ use dynomite::{
     retry::Policy,
     FromAttributes, Item, Retries,
 };
+use jsonwebtoken::{encode, EncodingKey, Header};
 use rusoto_core::Region;
 use serde_derive::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -285,11 +286,23 @@ pub async fn login(login: Login) -> Result<Box<dyn warp::Reply>, warp::Rejection
     if login.user == "foo" && login.pw == "bar" {
         debug!("Successful login");
         // make a jwt
+        let claims = Claims {
+            exp: 0,
+            sub: login.user,
+        };
+        let token = encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret("secret".as_ref()),
+        )
+        .unwrap(); // TODO: handle failure
 
-        // store jwt
+        // store jwt to data store
+        debug!("Made this jwt: {:?}", token);
 
         // return jwt
-        let r = warp::reply::json(&()); // jwt here
+        let resp = LoginResp { jwt: token };
+        let r = warp::reply::json(&resp);
         Ok(Box::new(warp::reply::with_status(r, StatusCode::OK)))
     } else {
         debug!("Incorrect username/pw");
@@ -418,7 +431,7 @@ async fn prepopulate_db(
         .sync();
 }
 
-#[derive(Deserialize, Serialize, Debug, Item, Clone, Default)]
+#[derive(Serialize)]
 pub struct ErrorResp {
     error: String,
 }
@@ -433,14 +446,25 @@ pub struct Meal {
     description: String,
 }
 
-#[derive(Serialize, Debug, Item, Clone, Default)]
+#[derive(Serialize, Debug)]
 struct Health {
     healthy: bool,
     version: String,
 }
 
-#[derive(Deserialize, Serialize, Debug, Item, Clone, Default)]
+#[derive(Deserialize, Debug)]
 pub struct Login {
     user: String,
     pw: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Claims {
+    exp: u32,    // Required (validate_exp defaults to true in validation). Expiration time
+    sub: String, // Optional. Subject (whom token refers to)
+}
+
+#[derive(Debug, Serialize)]
+struct LoginResp {
+    jwt: String,
 }
