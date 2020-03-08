@@ -20,7 +20,7 @@ jobs:
       # - run: echo "" > backend/src/ddb_loc.txt # for using real dynamodb
       - run: echo ${{ github.ref }} | sed -e 's#refs/tags/##' > backend/src/gitbits.txt
       - run: cd backend && cargo build --release
-      - uses: appleboy/scp-action@v0.0.1
+      - uses: appleboy/scp-action@v0.0.7
         with:
           host: 54.212.63.158
           username: ubuntu
@@ -29,7 +29,7 @@ jobs:
           port: 22
           source: "target/release/backend"
           target: "."
-      - uses: appleboy/ssh-action@master
+      - uses: appleboy/ssh-action@v0.0.7
         with:
           host: 54.212.63.158
           username: ubuntu
@@ -53,7 +53,7 @@ jobs:
       - run: echo "https://rampage.screaming3d.com/api" > frontend/src/api_loc.txt
       - run: echo ${{ github.ref }} | sed -e 's#refs/tags/##' > frontend/src/gitbits.txt
       - run: cd frontend && cargo build --release && npx wasm-pack build --target web --out-name package
-      - uses: appleboy/scp-action@v0.0.2
+      - uses: appleboy/scp-action@v0.0.7
         with:
           host: 54.212.63.158
           username: ubuntu
@@ -62,7 +62,7 @@ jobs:
           port: 22
           source: "frontend/pkg/*,frontend/index.html,frontend/favicon.ico"
           target: "frontend"
-      - uses: appleboy/ssh-action@master
+      - uses: appleboy/ssh-action@v0.0.7
         with:
           host: 54.212.63.158
           username: ubuntu
