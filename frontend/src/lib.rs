@@ -166,6 +166,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 if model.auth.is_none() {
                     orders.send_msg(Msg::ChangePage(Pages::Login));
                 } else {
+                    log!(format!("model auth is something: '{:?}'", model.auth));
                     orders
                         .skip()
                         .perform_cmd(update_meal(meal, model.auth.clone().unwrap()));
@@ -185,6 +186,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             if model.auth.is_none() {
                 orders.send_msg(Msg::ChangePage(Pages::Login));
             } else {
+                log!(format!("model auth is something: '{:?}'", model.auth));
                 orders
                     .skip()
                     .perform_cmd(delete_meal(id, model.auth.clone().unwrap()));
@@ -212,6 +214,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 if model.auth.is_none() {
                     orders.send_msg(Msg::ChangePage(Pages::Login));
                 } else {
+                    log!(format!("model auth is something: '{:?}'", model.auth));
                     orders
                         .skip()
                         .perform_cmd(create_meal(meal, model.auth.clone().unwrap()));

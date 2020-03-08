@@ -26,7 +26,7 @@ static GITBITS: &str = include_str!("gitbits.txt");
 #[tokio::main]
 async fn main() {
     pretty_env_logger::init();
-    info!("Firing up");
+    info!("Firing up. Version {}.", GITBITS);
     let c = get_dynamodb_client();
     // a bunch from https://github.com/seanmonstar/warp/blob/master/examples/todos.rs
     prepopulate_db(c.clone()).await;
@@ -321,10 +321,10 @@ pub async fn create_meal(_: (), create: Meal) -> Result<Box<dyn warp::Reply>, wa
 
 // curl -i -X POST -d '{"user": "foo", "pw": "bar"}' -H "Content-type: application/json" localhost:3030/login
 pub async fn login(login: Login) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
-    debug!("TEMPORARILY DOING THIS: expected pw is '{}'", SECUREPW);
+    // why with the newlines?
     if login.user == "matthew" && login.pw == SECUREPW.replace('\n', "") {
         debug!("Successful login");
-        // yeah should probably handle errors
+        // yeah should probably handle errors:
         let in_future = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
