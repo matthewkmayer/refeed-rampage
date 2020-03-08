@@ -122,7 +122,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::NoOp => (),
         Msg::LoginResp(l) => match l {
             Ok(login_ok) => {
-                log!(format!("Everything was gravy, loginok is {:?}", login_ok));
                 model.error = None;
                 let storage = seed::storage::get_storage().unwrap();
                 seed::storage::store_data(&storage, "authjwt", &login_ok);
@@ -141,7 +140,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 model.error = None;
             }
             None => {
-                log!("No login info to send");
                 model.error = Some("Please enter a username and password".to_string());
             }
         },
@@ -164,26 +162,20 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             }
         },
         Msg::SaveMeal(meal) => {
-            log!("updating existing meal");
             if meal.ready_to_submit() {
-                log!("ready to submit!");
                 orders
                     .skip()
                     .perform_cmd(update_meal(meal, model.auth.clone().unwrap()));
             // less unwrap please
             } else {
-                log!("error before save submission");
                 model.error = Some("provide a meal first".to_string());
                 orders.send_msg(Msg::MealValidationError);
             }
         }
         Msg::EditMeal { meal_id: id } => {
-            log!("editing a meal");
             orders.skip().perform_cmd(fetch_meal(id));
-            log!("and done fetching");
         }
         Msg::MealDeleted(_) => {
-            log!("deleted!");
             orders.send_msg(Msg::ChangePage(Pages::Meals));
         }
         Msg::DeleteMeal { meal_id: id } => {
@@ -192,7 +184,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 .perform_cmd(delete_meal(id, model.auth.clone().unwrap()));
         }
         Msg::MealValidationError => {
-            log!("validation fail");
             model.error = Some("Fill out the fields please".to_string());
         }
         Msg::MealCreateUpdateName(name) => {
@@ -210,9 +201,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             ));
         }
         Msg::CreateNewMeal(meal) => {
-            log("creating a new meal");
             if model.meal_ready_to_submit() {
-                log!("ready to submit!");
                 orders
                     .skip()
                     .perform_cmd(create_meal(meal, model.auth.clone().unwrap()));
@@ -222,13 +211,11 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 orders.send_msg(Msg::MealValidationError);
             }
         }
-        Msg::MealCreated(Ok(m)) => {
-            log!("m is {:?}", m);
+        Msg::MealCreated(Ok(_m)) => {
             model.error = None;
-            orders.send_msg(Msg::ChangePage(Pages::Meals));
+            orders.send_msg(Msg::ChangePage(Pages::Meals)); // should this go to the newly created meal's page?
         }
         Msg::MealCreated(Err(fail_reason)) => {
-            log!(format!("sad times: {:?}", fail_reason));
             model.error = Some(format!("Couldn't create meal: {:#?}", fail_reason));
         }
         Msg::FetchData { meal_id } => {
@@ -238,13 +225,11 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             };
         }
         Msg::MealsFetched(Ok(meals)) => {
-            log!("hey it worked");
             model.meals = meals;
             model.error = None;
         }
         Msg::MealsFetched(Err(fail_reason)) => {
             // 404 should go to 404 page
-            log!(format!("error fetchin' meal: {:#?}", fail_reason));
             error!(format!(
                 "Fetch error - Sending message failed - {:#?}",
                 fail_reason
@@ -258,7 +243,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             model.error = None;
         }
         Msg::MealFetched(Err(fail_reason)) => {
-            log!("error: {:#?}", fail_reason);
             error!(format!(
                 "Fetch error - Sending message failed - {:#?}",
                 fail_reason
@@ -305,7 +289,6 @@ fn view(model: &Model) -> impl View<Msg> {
         Pages::CreateMeal => create_meal_view(model),
         Pages::Login => create_login_view(model),
         Pages::Meals => {
-            log!("no meal id specific, show them all");
             let mut c = meal_list(model);
             c.push(button![
                 simple_ev(Ev::Click, Msg::FetchData { meal_id: None }),
@@ -322,7 +305,6 @@ fn view(model: &Model) -> impl View<Msg> {
             c
         }
         Pages::ViewSpecificMeal { meal_id } => {
-            log!("meal id specific");
             let mut c = vec![meal_item(&model.meal)];
             c.push(button![
                 simple_ev(
@@ -374,7 +356,6 @@ fn create_login_view(model: &Model) -> Vec<Node<Msg>> {
             id!["password"],
             keyboard_ev(Ev::KeyDown, |keyboard_event| {
                 if keyboard_event.key_code() == ENTER_KEY {
-                    log!("It's an enter key");
                     return Msg::LoginFromTxt;
                 }
                 Msg::NoOp
@@ -640,7 +621,6 @@ async fn login(login: LoginInput) -> Result<Msg, Msg> {
 async fn update_meal(meal: Meal, auth: String) -> Result<Msg, Msg> {
     let url = format!("{}/meals/{}", URL_BASE, meal.id);
     log!(format!("Sending something to {}", url));
-    // add auth header
     Request::new(url)
         .method(Method::Put)
         .header("Authorization", &format!("bearer: {}", auth))
@@ -743,7 +723,6 @@ struct Meal {
 
 impl Meal {
     fn ready_to_submit(&self) -> bool {
-        log!("self is {:?}", self);
         if self.description.is_empty() || self.name.is_empty() {
             return false;
         }

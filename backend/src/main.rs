@@ -19,7 +19,8 @@ extern crate pretty_env_logger;
 extern crate log;
 
 static DYNAMODB_LOC: &str = include_str!("ddb_loc.txt");
-static GITBITS: &str = include_str!("gitbits.txt"); //a
+static GITBITS: &str = include_str!("gitbits.txt");
+static JWT_SECRET: &str = "ASECRET3";
 
 #[tokio::main]
 async fn main() {
@@ -49,6 +50,11 @@ fn meal_filters() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejec
         .or(meal_update())
         .or(status_filter())
         .or(login_filter())
+        .or(unauthed()) // if something rejected it, toss an unauthorized at it
+}
+
+fn unauthed() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::any().and_then(unauthed_resp)
 }
 
 fn login_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -75,6 +81,14 @@ fn all_meal_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Re
 fn meal_create() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("meals")
         .and(warp::post())
+        .and(warp::header::<String>("Authorization"))
+        .and_then(|auth: String| async move {
+            if is_authed(auth) {
+                Ok(())
+            } else {
+                Err(warp::reject::not_found())
+            }
+        })
         .and(json_meal_body())
         .and_then(create_meal)
 }
@@ -82,13 +96,28 @@ fn meal_create() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reject
 fn meal_delete() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("meals" / Uuid)
         .and(warp::delete())
+        .and(warp::header::<String>("Authorization"))
+        .and_then(|id: Uuid, auth: String| async move {
+            if is_authed(auth) {
+                Ok(id)
+            } else {
+                Err(warp::reject::not_found())
+            }
+        })
         .and_then(delete_meal)
 }
 
 fn meal_update() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("meals" / Uuid)
         .and(warp::put())
-        .and(warp::header::<String>("Authorization")) // this should be an auth filter instead of making the handler do the work
+        .and(warp::header::<String>("Authorization"))
+        .and_then(|id: Uuid, auth: String| async move {
+            if is_authed(auth) {
+                Ok(id)
+            } else {
+                Err(warp::reject::not_found())
+            }
+        })
         .and(json_meal_body())
         .and_then(update_meal)
 }
@@ -182,19 +211,16 @@ async fn specific_meal(i: Uuid) -> Result<Box<dyn warp::Reply>, warp::Rejection>
     )))
 }
 
-async fn update_meal(
-    _id: Uuid,
-    auth: String,
-    create: Meal,
-) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
-    info!("auth we got: {:?}", auth);
-    if !is_authed(auth) {
-        let r = warp::reply::json(&());
-        return Ok(Box::new(warp::reply::with_status(
-            r,
-            StatusCode::UNAUTHORIZED,
-        )));
-    }
+async fn unauthed_resp() -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+    let r = warp::reply::json(&());
+    Ok(Box::new(warp::reply::with_status(
+        r,
+        StatusCode::UNAUTHORIZED,
+    )))
+}
+
+async fn update_meal(_id: Uuid, create: Meal) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+    debug!("Made it to update_meal");
     // make sure _id matches create.id
     let client = get_dynamodb_client();
 
@@ -256,7 +282,7 @@ async fn all_meals() -> Result<Box<dyn warp::Reply>, warp::Rejection> {
 }
 
 // should work with curl -i -X POST -H "content-type: application/json" -d '{"name":"Wings","id":3,"description":"mmm"}'  http://127.0.0.1:3030/meals/
-pub async fn create_meal(create: Meal) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+pub async fn create_meal(_: (), create: Meal) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     log::debug!("create_meal: {:?}", create);
 
     let client = get_dynamodb_client();
@@ -311,7 +337,7 @@ pub async fn login(login: Login) -> Result<Box<dyn warp::Reply>, warp::Rejection
         let token = encode(
             &Header::default(),
             &claims,
-            &EncodingKey::from_secret("secret".as_ref()),
+            &EncodingKey::from_secret(JWT_SECRET.as_ref()),
         )
         .unwrap(); // TODO: handle failure
 
@@ -337,6 +363,7 @@ fn json_login_body() -> impl Filter<Extract = (Login,), Error = warp::Rejection>
 }
 
 fn json_meal_body() -> impl Filter<Extract = (Meal,), Error = warp::Rejection> + Clone {
+    debug!("in json meal body");
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }
 
@@ -454,7 +481,7 @@ fn is_authed(auth: String) -> bool {
     let a = auth.replace("bearer: ", "");
     let token = decode::<Claims>(
         &a,
-        &DecodingKey::from_secret("secret".as_ref()),
+        &DecodingKey::from_secret(JWT_SECRET.as_ref()),
         &Validation::default(),
     );
     match token {
