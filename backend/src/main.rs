@@ -19,8 +19,9 @@ extern crate pretty_env_logger;
 extern crate log;
 
 static DYNAMODB_LOC: &str = include_str!("ddb_loc.txt");
+static SECUREPW: &str = include_str!("password.txt"); // this is for testing purposes
+static JWT_SECRET: &str = include_str!("jwtsecret.txt");
 static GITBITS: &str = include_str!("gitbits.txt");
-static JWT_SECRET: &str = "ASECRET3";
 
 #[tokio::main]
 async fn main() {
@@ -322,7 +323,7 @@ pub async fn create_meal(_: (), create: Meal) -> Result<Box<dyn warp::Reply>, wa
 pub async fn login(login: Login) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     debug!("Login is {:?}", login); // yes we need to obfuscate the password - override debug and print for the struct?
 
-    if login.user == "foo" && login.pw == "bar" {
+    if login.user == "matthew" && login.pw == SECUREPW {
         debug!("Successful login");
         // yeah should probably handle errors
         let in_future = SystemTime::now()

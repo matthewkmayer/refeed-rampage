@@ -19,6 +19,8 @@ jobs:
           override: true
       # - run: echo "" > backend/src/ddb_loc.txt # for using real dynamodb
       - run: echo ${{ github.ref }} | sed -e 's#refs/tags/##' > backend/src/gitbits.txt
+      - run: echo ${{ secrets.JWTS }} > backend/src/jwtsecret.txt
+      - run: echo ${{ secrets.PASSWD }} > backend/src/password.txt
       - run: cd backend && cargo build --release
       - uses: appleboy/scp-action@v0.0.7
         with:
