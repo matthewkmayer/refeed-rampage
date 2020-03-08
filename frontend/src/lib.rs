@@ -163,10 +163,13 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         },
         Msg::SaveMeal(meal) => {
             if meal.ready_to_submit() {
-                orders
-                    .skip()
-                    .perform_cmd(update_meal(meal, model.auth.clone().unwrap()));
-            // less unwrap please
+                if model.auth.is_none() {
+                    orders.send_msg(Msg::ChangePage(Pages::Login));
+                } else {
+                    orders
+                        .skip()
+                        .perform_cmd(update_meal(meal, model.auth.clone().unwrap()));
+                }
             } else {
                 model.error = Some("provide a meal first".to_string());
                 orders.send_msg(Msg::MealValidationError);
@@ -179,9 +182,13 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             orders.send_msg(Msg::ChangePage(Pages::Meals));
         }
         Msg::DeleteMeal { meal_id: id } => {
-            orders
-                .skip()
-                .perform_cmd(delete_meal(id, model.auth.clone().unwrap()));
+            if model.auth.is_none() {
+                orders.send_msg(Msg::ChangePage(Pages::Login));
+            } else {
+                orders
+                    .skip()
+                    .perform_cmd(delete_meal(id, model.auth.clone().unwrap()));
+            }
         }
         Msg::MealValidationError => {
             model.error = Some("Fill out the fields please".to_string());
@@ -202,9 +209,13 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         }
         Msg::CreateNewMeal(meal) => {
             if model.meal_ready_to_submit() {
-                orders
-                    .skip()
-                    .perform_cmd(create_meal(meal, model.auth.clone().unwrap()));
+                if model.auth.is_none() {
+                    orders.send_msg(Msg::ChangePage(Pages::Login));
+                } else {
+                    orders
+                        .skip()
+                        .perform_cmd(create_meal(meal, model.auth.clone().unwrap()));
+                }
             } else {
                 log!("error before submission");
                 model.error = Some("provide a meal first".to_string());
