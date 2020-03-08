@@ -46,6 +46,14 @@ fn meal_filters() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejec
         .or(meal_delete())
         .or(meal_update())
         .or(status_filter())
+        .or(login_filter())
+}
+
+fn login_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("login")
+        .and(warp::post())
+        .and(json_login_body())
+        .and_then(login)
 }
 
 fn status_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
@@ -65,7 +73,7 @@ fn all_meal_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Re
 fn meal_create() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("meals")
         .and(warp::post())
-        .and(json_body())
+        .and(json_meal_body())
         .and_then(create_meal)
 }
 
@@ -78,7 +86,7 @@ fn meal_delete() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reject
 fn meal_update() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("meals" / Uuid)
         .and(warp::put())
-        .and(json_body())
+        .and(json_meal_body())
         .and_then(update_meal)
 }
 
@@ -270,7 +278,34 @@ pub async fn create_meal(create: Meal) -> Result<Box<dyn warp::Reply>, warp::Rej
     }
 }
 
-fn json_body() -> impl Filter<Extract = (Meal,), Error = warp::Rejection> + Clone {
+// curl -i -X POST -d '{"user": "foo", "pw": "bar"}' -H "Content-type: application/json" localhost:3030/login
+pub async fn login(login: Login) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+    debug!("Login is {:?}", login); // yes we need to obfuscate the password - override debug and print for the struct?
+
+    if login.user == "foo" && login.pw == "bar" {
+        debug!("Successful login");
+        // make a jwt
+
+        // store jwt
+
+        // return jwt
+        let r = warp::reply::json(&()); // jwt here
+        Ok(Box::new(warp::reply::with_status(r, StatusCode::OK)))
+    } else {
+        debug!("Incorrect username/pw");
+        let r = warp::reply::json(&());
+        Ok(Box::new(warp::reply::with_status(
+            r,
+            StatusCode::UNAUTHORIZED,
+        )))
+    }
+}
+
+fn json_login_body() -> impl Filter<Extract = (Login,), Error = warp::Rejection> + Clone {
+    warp::body::content_length_limit(1024 * 16).and(warp::body::json())
+}
+
+fn json_meal_body() -> impl Filter<Extract = (Meal,), Error = warp::Rejection> + Clone {
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }
 
@@ -398,8 +433,14 @@ pub struct Meal {
     description: String,
 }
 
-#[derive(Deserialize, Serialize, Debug, Item, Clone, Default)]
+#[derive(Serialize, Debug, Item, Clone, Default)]
 struct Health {
     healthy: bool,
     version: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Item, Clone, Default)]
+pub struct Login {
+    user: String,
+    pw: String,
 }
