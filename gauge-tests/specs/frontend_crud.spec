@@ -17,12 +17,17 @@ Tests for refeed rampage's frontend. End to end tests until a stubbed backend is
 * Page contains "delicious pizza"
 * Page contains "delete it"
 
+## Login redirects to meal list
+* Login with testing creds
+* Page contains "➕"
+
 ## Create a new meal
 
 * Login with testing creds
 * Click "➕"
 * Fill out wings as a new meal
 * Page contains "wings"
+* Page contains "delete it"
 
 ## Edit an existing meal
 

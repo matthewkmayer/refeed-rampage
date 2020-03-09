@@ -72,8 +72,8 @@ struct CreateMealRequestBody {
     pub id: Uuid,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-struct MealCreatedResponse {}
+// #[derive(Debug, Clone, Deserialize)]
+type MealCreatedResponse = Meal;
 
 #[derive(Debug, Clone, Deserialize)]
 struct MealDeletedResponse {}
@@ -225,9 +225,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 orders.send_msg(Msg::MealValidationError);
             }
         }
-        Msg::MealCreated(Ok(_m)) => {
+        Msg::MealCreated(Ok(m)) => {
             model.error = None;
-            orders.send_msg(Msg::ChangePage(Pages::Meals)); // should this go to the newly created meal's page?
+            orders.send_msg(Msg::ChangePage(Pages::ViewSpecificMeal { meal_id: m.id }));
         }
         Msg::MealCreated(Err(fail_reason)) => {
             model.error = Some(format!("Couldn't create meal: {:#?}", fail_reason));
@@ -268,14 +268,17 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 orders.send_msg(Msg::FetchData {
                     meal_id: Some(meal_id),
                 });
+                seed::push_route(seed::Url::new(vec!["meals", &meal_id.to_string()]));
             }
             if let Pages::Meals = page {
                 orders.send_msg(Msg::FetchData { meal_id: None });
+                seed::push_route(seed::Url::new(vec!["meals"]));
             }
             if let Pages::EditMeal { meal_id } = page {
                 orders.send_msg(Msg::FetchData {
                     meal_id: Some(meal_id),
                 });
+                seed::push_route(seed::Url::new(vec!["meals", &meal_id.to_string(), "edit"]));
             }
             // Clears out any meal under construction if we're gonna make a new one
             if let Pages::CreateMeal = page {
@@ -287,6 +290,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 };
             }
             model.page = page;
+            // seed::push_route(seed::Url::new(vec!["myurl"]));
         }
     }
 }
