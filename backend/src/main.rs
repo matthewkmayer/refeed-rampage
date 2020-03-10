@@ -9,7 +9,10 @@ use dynomite::{
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rusoto_core::Region;
 use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::sync::Mutex;
 use uuid::Uuid;
 use warp::http::StatusCode;
 use warp::Filter;
@@ -23,6 +26,9 @@ static SECUREPW: &str = include_str!("password.txt"); // this is for testing pur
 static JWT_SECRET: &str = include_str!("jwtsecret.txt");
 static GITBITS: &str = include_str!("gitbits.txt");
 
+// store jwts in memory for now
+pub type JwtDb = Arc<Mutex<HashMap<String, i32>>>;
+
 #[tokio::main]
 async fn main() {
     pretty_env_logger::init();
@@ -31,6 +37,8 @@ async fn main() {
     // a bunch from https://github.com/seanmonstar/warp/blob/master/examples/todos.rs
     prepopulate_db(c.clone()).await;
 
+    let jwtdb: JwtDb = Arc::new(Mutex::new(HashMap::new()));
+
     let cors = warp::cors()
         .allow_origin("http://localhost:8080")
         .allow_origin("http://127.0.0.1:8080")
@@ -38,19 +46,21 @@ async fn main() {
         .allow_methods(vec!["GET", "POST", "DELETE", "PUT"])
         .allow_headers(vec!["content-type", "Authorization"]);
 
-    let routes = meal_filters().with(&cors).with(warp::log("backend"));
+    let routes = meal_filters(jwtdb).with(&cors).with(warp::log("backend"));
 
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }
 
-fn meal_filters() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+fn meal_filters(
+    jwtdb: JwtDb,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     a_meal_filter()
         .or(all_meal_filter())
-        .or(meal_create())
-        .or(meal_delete())
-        .or(meal_update())
+        .or(meal_create(jwtdb.clone()))
+        .or(meal_delete(jwtdb.clone()))
+        .or(meal_update(jwtdb.clone()))
         .or(status_filter())
-        .or(login_filter())
+        .or(login_filter(jwtdb))
         .or(unauthed()) // if something rejected it, toss an unauthorized at it
 }
 
@@ -58,9 +68,18 @@ fn unauthed() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection
     warp::any().and_then(unauthed_resp)
 }
 
-fn login_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+fn with_jwtdb(
+    db: JwtDb,
+) -> impl Filter<Extract = (JwtDb,), Error = std::convert::Infallible> + Clone {
+    warp::any().map(move || db.clone())
+}
+
+fn login_filter(
+    jwtdb: JwtDb,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("login")
         .and(warp::post())
+        .and(with_jwtdb(jwtdb))
         .and(json_login_body())
         .and_then(login)
 }
@@ -79,12 +98,15 @@ fn all_meal_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Re
     warp::path!("meals").and(warp::get()).and_then(all_meals)
 }
 
-fn meal_create() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+fn meal_create(
+    jwtdb: JwtDb,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("meals")
         .and(warp::post())
         .and(warp::header::<String>("Authorization"))
-        .and_then(|auth: String| async move {
-            if is_authed(auth) {
+        .and(with_jwtdb(jwtdb))
+        .and_then(|auth: String, jwtdb: JwtDb| async move {
+            if is_authed(auth, jwtdb).await {
                 Ok(())
             } else {
                 Err(warp::reject::not_found())
@@ -94,12 +116,15 @@ fn meal_create() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reject
         .and_then(create_meal)
 }
 
-fn meal_delete() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+fn meal_delete(
+    jwtdb: JwtDb,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("meals" / Uuid)
         .and(warp::delete())
         .and(warp::header::<String>("Authorization"))
-        .and_then(|id: Uuid, auth: String| async move {
-            if is_authed(auth) {
+        .and(with_jwtdb(jwtdb))
+        .and_then(|id: Uuid, auth: String, jwtdb: JwtDb| async move {
+            if is_authed(auth, jwtdb).await {
                 Ok(id)
             } else {
                 Err(warp::reject::not_found())
@@ -108,12 +133,15 @@ fn meal_delete() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reject
         .and_then(delete_meal)
 }
 
-fn meal_update() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+fn meal_update(
+    jwtdb: JwtDb,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("meals" / Uuid)
         .and(warp::put())
         .and(warp::header::<String>("Authorization"))
-        .and_then(|id: Uuid, auth: String| async move {
-            if is_authed(auth) {
+        .and(with_jwtdb(jwtdb))
+        .and_then(|id: Uuid, auth: String, jwtdb: JwtDb| async move {
+            if is_authed(auth, jwtdb).await {
                 Ok(id)
             } else {
                 Err(warp::reject::not_found())
@@ -320,7 +348,7 @@ pub async fn create_meal(_: (), create: Meal) -> Result<Box<dyn warp::Reply>, wa
 }
 
 // curl -i -X POST -d '{"user": "foo", "pw": "bar"}' -H "Content-type: application/json" localhost:3030/login
-pub async fn login(login: Login) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+pub async fn login(jwtdb: JwtDb, login: Login) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     // why with the newlines?
     if login.user == "matthew" && login.pw == SECUREPW.replace('\n', "") {
         debug!("Successful login");
@@ -341,8 +369,12 @@ pub async fn login(login: Login) -> Result<Box<dyn warp::Reply>, warp::Rejection
         )
         .unwrap(); // TODO: handle failure
 
-        // store jwt to data store
         debug!("Made this jwt: {:?}", token);
+
+        // store jwt to data store
+        let mut jwts = jwtdb.lock().await;
+        jwts.insert(token.clone(), 0); // should we use the value for something?
+        debug!("inserted token into db: {:?}", token);
 
         // return jwt
         let resp = LoginResp { jwt: token };
@@ -478,7 +510,7 @@ async fn prepopulate_db(
         .sync();
 }
 
-fn is_authed(auth: String) -> bool {
+async fn is_authed(auth: String, jwtdb: JwtDb) -> bool {
     debug!("Checking this jwt: {}", auth);
     let a = auth.replace("bearer: ", "");
     let token = decode::<Claims>(
@@ -488,9 +520,10 @@ fn is_authed(auth: String) -> bool {
     );
     match token {
         Ok(_) => {
+            // use what's returned in the Ok field to inspect token contents like the claims subject (account)
             debug!("Token is a-okay");
-            // check the database for it
-            true
+            let d = jwtdb.lock().await;
+            d.contains_key(&a)
         }
         Err(e) => {
             debug!("Token no good: {:?}", e);
