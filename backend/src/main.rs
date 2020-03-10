@@ -521,9 +521,13 @@ async fn is_authed(auth: String, jwtdb: JwtDb) -> bool {
     match token {
         Ok(_) => {
             // use what's returned in the Ok field to inspect token contents like the claims subject (account)
-            debug!("Token is a-okay");
+            debug!("Token is decodable");
             let d = jwtdb.lock().await;
-            d.contains_key(&a)
+            let c = d.contains_key(&a);
+            if !c {
+                debug!("JWT isn't one we know about, rejecting it");
+            }
+            c
         }
         Err(e) => {
             debug!("Token no good: {:?}", e);
