@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Burritos",
+    "id": "f11b1c5e-d6d8-4dce-8a9d-9e05d870b881",
+    "photos": null,
+    "description": "Amazing burritos"
+  },
+  {
+    "name": "Pizza",
+    "id": "936da01f-9abd-4d9d-80c7-02af85c822a8",
+    "photos": null,
+    "description": "Delicious pizza"
+  }
+]
