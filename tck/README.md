@@ -4,7 +4,7 @@ Standin for building and running the real deal. Mocks the backend for us.
 
 We don't want to reimplement the backend in another language, we want something that responds similarly to the real backend service. This allows us to test the frontend code without having to pay the compilation price of the backend.
 
-Right now we're running
+Right now we're running [gomicro/duty](https://github.com/gomicro/duty) and [gomicro/avenues](https://github.com/gomicro/avenues) to achieve this.
 
 From the root of the project, run `duty` to provide mock responses:
 
@@ -13,3 +13,5 @@ From the root of the project, run `duty` to provide mock responses:
 `avenues` allows us to make the CORS requests because it supports cross-origin requests:
 
 `$ docker run -it -v $PWD/tck/routes.yaml:/routes.yaml -p 3030:4567 --link duty:duty gomicro/avenues`
+
+`avenues` now runs on the same port as the real backend so the frontend can be used as usual.
