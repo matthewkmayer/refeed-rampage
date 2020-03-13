@@ -1,0 +1,6 @@
+---
+routes:
+  - endpoint: "/v1/foo"
+    response:
+      code: 200
+      payload: "/responses/resp01.json"
