@@ -522,7 +522,10 @@ fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
                 ]
             ]
         ],
-        a!["Login", class!["nav-link"], attrs! {At::Href => "/login"}],
+        match model.auth {
+            Some(_) => a!["Logout", class!["nav-link"]], // later we can put user name in here: "log out Matthew"
+            None => a!["Login", class!["nav-link"], attrs! {At::Href => "/login"}],
+        },
     ]
 }
 
