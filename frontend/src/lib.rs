@@ -575,7 +575,8 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
                     "✏️"
                 ]],
                 td![m.name],
-                td![m.description]
+                td![m.description],
+                td!["⭐⭐⭐⭐⭐"]
             ]
         })
         .collect();
@@ -588,12 +589,17 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
                 th![attrs! { At::Scope => "col" }],
                 th!["name", attrs! { At::Scope => "col" }],
                 th!["description", attrs! { At::Scope => "col" }],
+                th!["rating", attrs! { At::Scope => "col" }],
             ]],
             tbody![bodies,]
         ]
     ];
+    let doohickey = p![
+        "⭐",
+        style! {"color" => "transparent", "text-shadow" => "0 0 0 black"}
+    ];
     let b = p![button![attrs! {At::Href => "/meals/create"}, "➕"]];
-    vec![l, b]
+    vec![l, doohickey, b]
 }
 
 // https://seed-rs.org/guide/http-requests-and-state
