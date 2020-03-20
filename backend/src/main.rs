@@ -32,7 +32,11 @@ pub type JwtDb = Arc<Mutex<HashMap<String, i32>>>;
 #[tokio::main]
 async fn main() {
     pretty_env_logger::init();
-    info!("Firing up. Version {}.", GITBITS);
+    let version_txt = match GITBITS.len() {
+        0 => "dev",
+        _ => GITBITS,
+    };
+    info!("Firing up. Version {}.", version_txt);
     let c = get_dynamodb_client();
     // a bunch from https://github.com/seanmonstar/warp/blob/master/examples/todos.rs
     prepopulate_db(c.clone()).await;
@@ -397,7 +401,6 @@ fn json_login_body() -> impl Filter<Extract = (Login,), Error = warp::Rejection>
 }
 
 fn json_meal_body() -> impl Filter<Extract = (Meal,), Error = warp::Rejection> + Clone {
-    debug!("in json meal body");
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }
 

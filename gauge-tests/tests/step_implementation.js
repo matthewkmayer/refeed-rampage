@@ -1,6 +1,6 @@
 /* globals gauge*/
 "use strict";
-const { openBrowser, write, closeBrowser, goto, screenshot, text, below, textBox, button, click, clear, $, toLeftOf } = require('taiko');
+const { openBrowser, write, closeBrowser, goto, screenshot, text, below, textBox, button, click, clear, $, toLeftOf, goBack } = require('taiko');
 const assert = require("assert");
 const headless = process.env.headless_chrome.toLowerCase() === 'true';
 
@@ -56,4 +56,8 @@ step("Login with testing creds", async function () {
 
 step("Click the edit button next to pizza", async function () {
     await click(button(toLeftOf("pizza")))
+});
+
+step("Press the browser's back button", async function () {
+    await goBack();
 });

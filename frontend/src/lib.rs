@@ -268,17 +268,14 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 orders.send_msg(Msg::FetchData {
                     meal_id: Some(meal_id),
                 });
-                seed::push_route(seed::Url::new(vec!["meals", &meal_id.to_string()]));
             }
             if let Pages::Meals = page {
                 orders.send_msg(Msg::FetchData { meal_id: None });
-                seed::push_route(seed::Url::new(vec!["meals"]));
             }
             if let Pages::EditMeal { meal_id } = page {
                 orders.send_msg(Msg::FetchData {
                     meal_id: Some(meal_id),
                 });
-                seed::push_route(seed::Url::new(vec!["meals", &meal_id.to_string(), "edit"]));
             }
             // Clears out any meal under construction if we're gonna make a new one
             if let Pages::CreateMeal = page {
@@ -290,7 +287,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 };
             }
             model.page = page;
-            // seed::push_route(seed::Url::new(vec!["myurl"]));
         }
     }
 }
