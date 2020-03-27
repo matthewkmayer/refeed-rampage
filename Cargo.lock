@@ -81,6 +81,7 @@ dependencies = [
  "seed",
  "serde",
  "serde_derive",
+ "shared",
  "tokio 0.2.13",
  "uuid",
  "warp",
@@ -2344,6 +2345,16 @@ dependencies = [
  "digest",
  "fake-simd",
  "opaque-debug",
+]
+
+[[package]]
+name = "shared"
+version = "0.1.0"
+dependencies = [
+ "dynomite",
+ "serde",
+ "serde_derive",
+ "uuid",
 ]
 
 [[package]]

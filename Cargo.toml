@@ -3,3 +3,4 @@ members = [
     "backend",
     "frontend"
 ]
+exclude = ["shared"]

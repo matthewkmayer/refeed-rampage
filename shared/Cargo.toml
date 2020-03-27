@@ -1,0 +1,11 @@
+[package]
+name = "shared"
+version = "0.1.0"
+authors = ["Matthew Mayer <matthewkmayer@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+dynomite = { version = "0.7", features = ["rustls", "derive"], default-features = false }
+uuid = { version = "0.8", features = ["serde", "v4"] }
+serde = "1.0"
+serde_derive = "1.0"

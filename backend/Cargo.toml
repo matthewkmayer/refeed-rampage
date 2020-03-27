@@ -20,6 +20,8 @@ dynomite = { version = "0.7", features = ["rustls", "derive"], default-features 
 rusoto_core = {version = "0.41", features = ["rustls"], default-features = false }
 jsonwebtoken = "7"
 
+shared = { path = "../shared" }
+
 [[test]]
 name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest

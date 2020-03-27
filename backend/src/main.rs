@@ -9,6 +9,7 @@ use dynomite::{
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rusoto_core::Region;
 use serde_derive::{Deserialize, Serialize};
+use shared::Meal;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -542,16 +543,6 @@ async fn is_authed(auth: String, jwtdb: JwtDb) -> bool {
 #[derive(Serialize)]
 pub struct ErrorResp {
     error: String,
-}
-
-#[derive(Deserialize, Serialize, Debug, Item, Clone, Default)]
-pub struct Meal {
-    #[dynomite(rename = "mealName")]
-    name: String,
-    #[dynomite(partition_key)]
-    id: Uuid,
-    photos: Option<String>,
-    description: String,
 }
 
 #[derive(Serialize, Debug)]
