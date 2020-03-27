@@ -20,7 +20,7 @@ dynomite = { version = "0.7", features = ["rustls", "derive"], default-features 
 rusoto_core = {version = "0.41", features = ["rustls"], default-features = false }
 jsonwebtoken = "7"
 
-shared = { path = "../shared" }
+shared = { path = "../shared", features = ["dynamo_bits"] }
 
 [[test]]
 name = "cucumber"

@@ -1,12 +1,15 @@
+#[cfg(feature = "dynamo_bits")]
 use dynomite::Item;
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, Item, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "dynamo_bits", derive(Item))]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, Eq, PartialEq, Hash)]
 pub struct Meal {
-    #[dynomite(rename = "mealName")]
+    #[cfg_attr(feature = "dynamo_bits", dynomite(rename = "mealName"))]
     pub name: String,
-    #[dynomite(partition_key)]
+    #[cfg_attr(feature = "dynamo_bits", dynomite(partition_key))]
     pub id: Uuid,
     pub photos: Option<String>,
     pub description: String,
