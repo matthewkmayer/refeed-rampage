@@ -2,7 +2,7 @@ use dynomite::Item;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, Item)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, Item, Eq, PartialEq, Hash)]
 pub struct Meal {
     #[dynomite(rename = "mealName")]
     pub name: String,

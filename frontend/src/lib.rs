@@ -2,6 +2,7 @@
 
 use seed::{browser::service::fetch, prelude::*, *};
 use serde::{Deserialize, Serialize};
+use shared::Meal;
 use uuid::Uuid;
 
 static URL_BASE: &str = include_str!("api_loc.txt");
@@ -162,7 +163,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             }
         },
         Msg::SaveMeal(meal) => {
-            if meal.ready_to_submit() {
+            if model.meal_ready_to_submit() {
                 if model.auth.is_none() {
                     orders.send_msg(Msg::ChangePage(Pages::Login));
                 } else {
@@ -734,23 +735,6 @@ fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
 
     orders.send_msg(routes(url).unwrap());
     AfterMount::new(m)
-}
-
-#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Debug)]
-struct Meal {
-    name: String,
-    id: Uuid,
-    photos: Option<String>,
-    description: String,
-}
-
-impl Meal {
-    fn ready_to_submit(&self) -> bool {
-        if self.description.is_empty() || self.name.is_empty() {
-            return false;
-        }
-        true
-    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
