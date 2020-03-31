@@ -595,13 +595,12 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
             tbody![bodies,]
         ]
     ];
-    // let doohickey = p![
-    //     "⭐",
-    //     style! {"color" => "transparent", "text-shadow" => "0 0 0 black"}
-    // ];
+    let doohickey = p![
+        "⭐",
+        style! {"color" => "transparent", "text-shadow" => "0 0 0 black"}
+    ];
     let b = p![button![attrs! {At::Href => "/meals/create"}, "➕"]];
-    // vec![l, doohickey, b]
-    vec![l, b]
+    vec![l, doohickey, b]
 }
 
 // https://seed-rs.org/guide/http-requests-and-state

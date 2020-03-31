@@ -4,3 +4,7 @@ members = [
     "frontend"
 ]
 exclude = ["shared"]
+
+[profile.release]
+lto = true
+opt-level = 'z'
