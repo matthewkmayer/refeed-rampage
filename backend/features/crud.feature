@@ -21,6 +21,6 @@ Feature: I can perform CRUD operations on meals
     Then doot
 
   Scenario: I can delete a meal
-    Given doot
-    When doot
-    Then doot
+    Given meals exist
+    When I try to delete a meal without auth
+    Then I see an unauthorized response

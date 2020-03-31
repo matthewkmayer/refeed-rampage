@@ -14,6 +14,7 @@ pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     meals: Vec<Meal>,
     meal: Meal,
+    resp_code: u16,
 }
 
 impl cucumber::World for MyWorld {}
@@ -28,6 +29,7 @@ impl std::default::Default for MyWorld {
                 photos: None,
                 description: "".to_string(),
             },
+            resp_code: 0,
         }
     }
 }
@@ -44,6 +46,15 @@ mod example_steps {
             // noop
         };
 
+        when "I try to delete a meal without auth" |world, _step| {
+            let resp = reqwest::blocking::get("http://127.0.0.1:3030/meals").unwrap()
+            .json::<Vec<Meal>>().unwrap();
+            let meal_to_del = resp[0].id;
+            let client = reqwest::blocking::Client::new();
+            let r2 = client.delete(&format!("http://127.0.0.1:3030/meals/{}", meal_to_del)).send().unwrap();
+            world.resp_code = r2.status().as_u16();
+        };
+
         when "I request all meals" |world, _step| {
             let resp = reqwest::blocking::get("http://127.0.0.1:3030/meals").unwrap()
             .json::<Vec<Meal>>().unwrap();
@@ -58,6 +69,10 @@ mod example_steps {
               Err(e) => panic!("got an error: {}", e),
           }
       };
+
+        then "I see an unauthorized response" |world, _step| {
+            assert_eq!(world.resp_code, 401);
+        };
 
         then "I see some meals" |world, _step| {
             assert_eq!(world.meals.len() > 0, true);
