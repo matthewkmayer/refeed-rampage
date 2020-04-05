@@ -640,7 +640,7 @@ fn clickable_stars(stars: Option<i32>) -> Node<Msg> {
 fn stars(stars: Option<i32>) -> Node<Msg> {
     let no_stars = p![
         "⭐⭐⭐⭐⭐",
-        style! {"color" => "transparent", "text-shadow" => "0 0 0 black"}
+        style! {"color" => "transparent", "text-shadow" => "0 0 0 white"}
     ];
     match stars {
         None => no_stars,
