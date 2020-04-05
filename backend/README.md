@@ -6,6 +6,8 @@ Run with `cargo run` to start the web server at http://localhost:3030 .
 
 To see logs: `RUST_LOG="backend=debug" cargo run` .
 
+Logs on the deployed instance: `sudo systemctl status rrmeals` .
+
 ## Tests
 
 API level:

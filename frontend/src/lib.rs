@@ -89,6 +89,7 @@ enum Msg {
     EditMeal { meal_id: Uuid },
     MealCreateUpdateName(String),
     MealCreateUpdateDescription(String),
+    MealCreateUpdateStars(i32),
     CreateNewMeal(Meal),
     SaveMeal(Meal),
     MealValidationError,
@@ -210,6 +211,13 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!(format!(
                 "model meal under constr desc is {}",
                 model.meal_under_construction.description
+            ));
+        }
+        Msg::MealCreateUpdateStars(s) => {
+            model.meal_under_construction.stars = Some(s);
+            log!(format!(
+                "model meal under constr stars is {:?}",
+                model.meal_under_construction.stars
             ));
         }
         Msg::CreateNewMeal(meal) => {
@@ -440,6 +448,16 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
                     ],
                 ],
             ],
+            div![
+                class!["form-row"],
+                div![
+                    class!["form-group col-md-6"],
+                    label!["Meal rating",],
+                    // how to handle input...
+                    // show existing stars
+                    clickable_stars(model.meal_under_construction.stars)
+                ],
+            ],
         ],
         button![
             submit_text,
@@ -552,6 +570,71 @@ fn nav(model: &Model) -> Node<Msg> {
             nav_nodes(model),
         ],
     ]
+}
+
+fn clickable_star(rating: i32, active: bool) -> Node<Msg> {
+    match active {
+        true => span![
+            "⭐",
+            style! {St::Cursor => "pointer"},
+            simple_ev(Ev::Click, Msg::MealCreateUpdateStars(rating)),
+        ],
+        false => span![
+            "⭐",
+            style! {"color" => "transparent", "text-shadow" => "0 0 0 white", St::Cursor => "pointer"},
+            simple_ev(Ev::Click, Msg::MealCreateUpdateStars(rating)),
+        ],
+    }
+}
+
+// each star is clickable and sends a message
+fn clickable_stars(stars: Option<i32>) -> Node<Msg> {
+    let no_stars = p![
+        clickable_star(1, false),
+        clickable_star(2, false),
+        clickable_star(3, false),
+        clickable_star(4, false),
+        clickable_star(5, false),
+    ];
+    match stars {
+        None => no_stars,
+        Some(1) => p![
+            clickable_star(1, true),
+            clickable_star(2, false),
+            clickable_star(3, false),
+            clickable_star(4, false),
+            clickable_star(5, false),
+        ],
+        Some(2) => p![
+            clickable_star(1, true),
+            clickable_star(2, true),
+            clickable_star(3, false),
+            clickable_star(4, false),
+            clickable_star(5, false),
+        ],
+        Some(3) => p![
+            clickable_star(1, true),
+            clickable_star(2, true),
+            clickable_star(3, true),
+            clickable_star(4, false),
+            clickable_star(5, false),
+        ],
+        Some(4) => p![
+            clickable_star(1, true),
+            clickable_star(2, true),
+            clickable_star(3, true),
+            clickable_star(4, true),
+            clickable_star(5, false),
+        ],
+        Some(5) => p![
+            clickable_star(1, true),
+            clickable_star(2, true),
+            clickable_star(3, true),
+            clickable_star(4, true),
+            clickable_star(5, true),
+        ],
+        _ => no_stars,
+    }
 }
 
 fn stars(stars: Option<i32>) -> Node<Msg> {
