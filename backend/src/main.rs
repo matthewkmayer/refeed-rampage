@@ -255,7 +255,6 @@ async fn unauthed_resp() -> Result<Box<dyn warp::Reply>, warp::Rejection> {
 }
 
 async fn update_meal(_id: Uuid, create: Meal) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
-    debug!("Made it to update_meal");
     // make sure _id matches create.id
     let client = get_dynamodb_client();
 
@@ -492,6 +491,7 @@ async fn prepopulate_db(
         name: "Burritos".to_string(),
         photos: None,
         description: "Amazing burritos".to_string(),
+        stars: Some(4),
     };
 
     let _ = client

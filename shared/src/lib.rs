@@ -13,4 +13,5 @@ pub struct Meal {
     pub id: Uuid,
     pub photos: Option<String>,
     pub description: String,
+    pub stars: Option<i32>,
 }

@@ -1,14 +1,6 @@
 use cucumber::cucumber;
-use serde_derive::{Deserialize, Serialize};
+use shared::Meal;
 use uuid::Uuid;
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct Meal {
-    name: String,
-    id: Uuid,
-    photos: Option<String>,
-    description: String,
-}
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
@@ -28,6 +20,7 @@ impl std::default::Default for MyWorld {
                 id: Uuid::new_v4(),
                 photos: None,
                 description: "".to_string(),
+                stars: None,
             },
             resp_code: 0,
         }
@@ -83,6 +76,7 @@ mod example_steps {
           println!("meal is {:?}", world.meal);
           assert_eq!(world.meal.name.len() > 0, true);
           assert_eq!(world.meal.description.len() > 0, true);
+          assert_eq!(world.meal.stars.is_some(), true);
       };
     });
 }

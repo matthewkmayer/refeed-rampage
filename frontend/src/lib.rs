@@ -43,12 +43,14 @@ impl Default for Model {
                 description: "".to_string(),
                 id: Uuid::new_v4(),
                 photos: None,
+                stars: None,
             },
             meal: Meal {
                 name: "".to_string(),
                 description: "".to_string(),
                 id: Uuid::new_v4(),
                 photos: None,
+                stars: None,
             },
             login: None,
             auth: None,
@@ -285,6 +287,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     description: "".to_string(),
                     id: Uuid::new_v4(),
                     photos: None,
+                    stars: None,
                 };
             }
             model.page = page;
@@ -554,7 +557,10 @@ fn nav(model: &Model) -> Node<Msg> {
 // for a detail view
 fn meal_item(m: &Meal) -> Node<Msg> {
     div![
-        h4![m.name, div![p![m.description, class!["lead"]],]],
+        h4![
+            m.name,
+            div![p![m.description, class!["lead"]], p!["⭐⭐⭐⭐⭐"]]
+        ],
         button![
             simple_ev(Ev::Click, Msg::DeleteMeal { meal_id: m.id }),
             "Delete it"
