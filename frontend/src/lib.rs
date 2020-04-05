@@ -555,20 +555,42 @@ fn nav(model: &Model) -> Node<Msg> {
 }
 
 fn stars(stars: Option<i32>) -> Node<Msg> {
+    let no_stars = p![
+        "⭐⭐⭐⭐⭐",
+        style! {"color" => "transparent", "text-shadow" => "0 0 0 black"}
+    ];
     match stars {
-        None => p![
-            "⭐⭐⭐⭐⭐",
-            style! {"color" => "transparent", "text-shadow" => "0 0 0 black"}
+        None => no_stars,
+        Some(1) => p![
+            span!["⭐"],
+            span![
+                "⭐⭐⭐⭐",
+                style! {"color" => "transparent", "text-shadow" => "0 0 0 white"}
+            ]
         ],
-        Some(1) => p!["⭐⭐⭐⭐⭐"],
-        Some(2) => p!["⭐⭐⭐⭐⭐"],
-        Some(3) => p!["⭐⭐⭐⭐⭐"],
-        Some(4) => p!["⭐⭐⭐⭐"],
+        Some(2) => p![
+            span!["⭐⭐"],
+            span![
+                "⭐⭐⭐",
+                style! {"color" => "transparent", "text-shadow" => "0 0 0 white"}
+            ]
+        ],
+        Some(3) => p![
+            span!["⭐⭐⭐"],
+            span![
+                "⭐⭐",
+                style! {"color" => "transparent", "text-shadow" => "0 0 0 white"}
+            ]
+        ],
+        Some(4) => p![
+            span!["⭐⭐⭐⭐"],
+            span![
+                "⭐",
+                style! {"color" => "transparent", "text-shadow" => "0 0 0 white"}
+            ]
+        ],
         Some(5) => p!["⭐⭐⭐⭐⭐"],
-        _ => p![
-            "⭐⭐⭐⭐⭐",
-            style! {"color" => "transparent", "text-shadow" => "0 0 0 black"}
-        ],
+        _ => no_stars,
     }
 }
 
