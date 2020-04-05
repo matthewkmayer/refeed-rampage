@@ -505,6 +505,7 @@ async fn prepopulate_db(
     m.id = Uuid::parse_str("936DA01F9ABD4d9d80C702AF85C822A8").unwrap();
     m.name = "Pizza".to_string();
     m.description = "Delicious pizza".to_string();
+    m.stars = Some(5);
 
     let _ = client
         .put_item(PutItemInput {

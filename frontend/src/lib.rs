@@ -554,12 +554,31 @@ fn nav(model: &Model) -> Node<Msg> {
     ]
 }
 
+fn stars(stars: Option<i32>) -> Node<Msg> {
+    match stars {
+        None => p![
+            "⭐⭐⭐⭐⭐",
+            style! {"color" => "transparent", "text-shadow" => "0 0 0 black"}
+        ],
+        Some(1) => p!["⭐⭐⭐⭐⭐"],
+        Some(2) => p!["⭐⭐⭐⭐⭐"],
+        Some(3) => p!["⭐⭐⭐⭐⭐"],
+        Some(4) => p!["⭐⭐⭐⭐"],
+        Some(5) => p!["⭐⭐⭐⭐⭐"],
+        _ => p![
+            "⭐⭐⭐⭐⭐",
+            style! {"color" => "transparent", "text-shadow" => "0 0 0 black"}
+        ],
+    }
+}
+
 // for a detail view
 fn meal_item(m: &Meal) -> Node<Msg> {
+    // how do we apply the style to some of the tag?
     div![
         h4![
             m.name,
-            div![p![m.description, class!["lead"]], p!["⭐⭐⭐⭐⭐"]]
+            div![p![m.description, class!["lead"]], stars(m.stars)]
         ],
         button![
             simple_ev(Ev::Click, Msg::DeleteMeal { meal_id: m.id }),
@@ -583,7 +602,7 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
                 ]],
                 td![m.name],
                 td![m.description],
-                td!["⭐⭐⭐⭐⭐"]
+                td![stars(m.stars)]
             ]
         })
         .collect();
@@ -601,12 +620,8 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
             tbody![bodies,]
         ]
     ];
-    let doohickey = p![
-        "⭐",
-        style! {"color" => "transparent", "text-shadow" => "0 0 0 black"}
-    ];
     let b = p![button![attrs! {At::Href => "/meals/create"}, "➕"]];
-    vec![l, doohickey, b]
+    vec![l, b]
 }
 
 // https://seed-rs.org/guide/http-requests-and-state
