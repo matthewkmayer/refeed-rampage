@@ -573,17 +573,18 @@ fn nav(model: &Model) -> Node<Msg> {
 }
 
 fn clickable_star(rating: i32, active: bool) -> Node<Msg> {
-    match active {
-        true => span![
+    if active {
+        span![
             "⭐",
             style! {St::Cursor => "pointer"},
             simple_ev(Ev::Click, Msg::MealCreateUpdateStars(rating)),
-        ],
-        false => span![
+        ]
+    } else {
+        span![
             "⭐",
             style! {"color" => "transparent", "text-shadow" => "0 0 0 white", St::Cursor => "pointer"},
             simple_ev(Ev::Click, Msg::MealCreateUpdateStars(rating)),
-        ],
+        ]
     }
 }
 
