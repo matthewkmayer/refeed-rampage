@@ -733,14 +733,13 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
 // https://seed-rs.org/guide/http-requests-and-state
 
 async fn fetch_meals() -> Result<Msg, Msg> {
+    log!("Fetching meals");
     let url = format!("{}/meals", URL_BASE);
-    log!(format!("url is {}", url));
     Request::new(url).fetch_json_data(Msg::MealsFetched).await
 }
 
 async fn delete_meal(id: Uuid, auth: String) -> Result<Msg, Msg> {
     let url = format!("{}/meals/{}", URL_BASE, id);
-    log!(format!("url is {}", url));
     Request::new(url)
         .method(Method::Delete)
         .header("Authorization", &format!("bearer: {}", auth))
@@ -750,7 +749,6 @@ async fn delete_meal(id: Uuid, auth: String) -> Result<Msg, Msg> {
 
 async fn create_meal(meal: Meal, auth: String) -> Result<Msg, Msg> {
     let url = format!("{}/meals", URL_BASE);
-    log!(format!("Sending something to {}", url));
     Request::new(url)
         .method(Method::Post)
         .header("Authorization", &format!("bearer: {}", auth))
@@ -761,7 +759,6 @@ async fn create_meal(meal: Meal, auth: String) -> Result<Msg, Msg> {
 
 async fn login(login: LoginInput) -> Result<Msg, Msg> {
     let url = format!("{}/login", URL_BASE,);
-    log!(format!("Sending something to {}", url));
     Request::new(url)
         .method(Method::Post)
         .send_json(&login)
@@ -771,7 +768,6 @@ async fn login(login: LoginInput) -> Result<Msg, Msg> {
 
 async fn update_meal(meal: Meal, auth: String) -> Result<Msg, Msg> {
     let url = format!("{}/meals/{}", URL_BASE, meal.id);
-    log!(format!("Sending something to {}", url));
     Request::new(url)
         .method(Method::Put)
         .header("Authorization", &format!("bearer: {}", auth))
@@ -831,7 +827,7 @@ pub fn render() {
         .build_and_start();
 }
 
-fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
+fn after_mount(url: Url, _orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
     let mut m: Model = Default::default();
 
     // same code as `routes`
@@ -860,7 +856,8 @@ fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
         _ => Pages::Home,
     };
 
-    orders.send_msg(routes(url).unwrap());
+    // This duplicates requests on a new page load or refresh. Figure out why.
+    // orders.send_msg(routes(url).unwrap());
     AfterMount::new(m)
 }
 
