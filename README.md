@@ -24,3 +24,17 @@ I am not planning on:
 
 * providing support for anyone else using this
 * making this Amazon scale production ready
+
+## Repository structure
+
+### Shared types
+
+The [shared types](shared/) are put in their own project. This enforces the backend and frontend to have to same type with one authoritative source. It uses cargo feature flags to opt-in for behavior required by the backend but not the frontend. For example, DynamoDB traits via [dynomite](https://github.com/softprops/dynomite).
+
+### Backend
+
+A [warp](https://github.com/seanmonstar/warp) web server, using DynamoDB as the backing data store.
+
+### Frontend
+
+A WASM single page web app using [Seed](https://github.com/seed-rs/seed).
