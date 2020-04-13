@@ -4,7 +4,7 @@ Authoritative source of types used by backend and frontend.
 
 Some features are opted into via cargo flags. This is done because [Rusoto](https://github.com/rusoto/rusoto) and [dynomite](https://github.com/softprops/dynomite) should only be compiled and used on the backend service.
 
-See this project's [Cargo.toml file](Cargo.toml) to see the features available. The [backend Cargo.toml file](../backend/Cargo.toml) shows how the backend opts in to the Rusoto/dynomite behavior. [lib.rs](lib.rs) shows how the feature flags are used:
+See this project's [Cargo.toml file](Cargo.toml) to see the features available. The [backend Cargo.toml file](../backend/Cargo.toml) shows how the backend opts in to the Rusoto/dynomite behavior. [lib.rs](src/lib.rs) shows how the feature flags are used:
 
 ```rust
 #[cfg_attr(feature = "dynamo_bits", derive(Item))]
