@@ -38,3 +38,13 @@ A [warp](https://github.com/seanmonstar/warp) web server, using DynamoDB as the 
 ### Frontend
 
 A WASM single page web app using [Seed](https://github.com/seed-rs/seed).
+
+## Running locally
+
+[`cargo make`](https://github.com/sagiegurari/cargo-make) is required: install by running `cargo install --force cargo-make`.
+
+1. Start local DynamoDB docker container with `docker run --rm -p 8000:8000 -d amazon/dynamodb-local` .
+2. Start backend service: change directory into `backend` and run `RUST_LOG="backend" AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY cargo run` .
+3. Start frontend server: change directory into `frontend` and run `cargo make serve frontend` .
+4. Run frontend code with `cargo make watch frontend` . This will watch for any changes and compile it to be served by the server started above.
+5. Open http://127.0.0.1:8080/ and click around.
