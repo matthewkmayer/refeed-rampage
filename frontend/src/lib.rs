@@ -734,12 +734,12 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
 
 async fn fetch_meals() -> Result<Msg, Msg> {
     log!("Fetching meals");
-    let url = format!("{}/meals", URL_BASE);
+    let url = format!("{}/meals", URL_BASE.replace("\n", ""));
     Request::new(url).fetch_json_data(Msg::MealsFetched).await
 }
 
 async fn delete_meal(id: Uuid, auth: String) -> Result<Msg, Msg> {
-    let url = format!("{}/meals/{}", URL_BASE, id);
+    let url = format!("{}/meals/{}", URL_BASE.replace("\n", ""), id);
     Request::new(url)
         .method(Method::Delete)
         .header("Authorization", &format!("bearer: {}", auth))
@@ -748,7 +748,7 @@ async fn delete_meal(id: Uuid, auth: String) -> Result<Msg, Msg> {
 }
 
 async fn create_meal(meal: Meal, auth: String) -> Result<Msg, Msg> {
-    let url = format!("{}/meals", URL_BASE);
+    let url = format!("{}/meals", URL_BASE.replace("\n", ""));
     Request::new(url)
         .method(Method::Post)
         .header("Authorization", &format!("bearer: {}", auth))
@@ -758,7 +758,7 @@ async fn create_meal(meal: Meal, auth: String) -> Result<Msg, Msg> {
 }
 
 async fn login(login: LoginInput) -> Result<Msg, Msg> {
-    let url = format!("{}/login", URL_BASE,);
+    let url = format!("{}/login", URL_BASE.replace("\n", ""));
     Request::new(url)
         .method(Method::Post)
         .send_json(&login)
@@ -767,7 +767,7 @@ async fn login(login: LoginInput) -> Result<Msg, Msg> {
 }
 
 async fn update_meal(meal: Meal, auth: String) -> Result<Msg, Msg> {
-    let url = format!("{}/meals/{}", URL_BASE, meal.id);
+    let url = format!("{}/meals/{}", URL_BASE.replace("\n", ""), meal.id);
     Request::new(url)
         .method(Method::Put)
         .header("Authorization", &format!("bearer: {}", auth))
@@ -777,7 +777,7 @@ async fn update_meal(meal: Meal, auth: String) -> Result<Msg, Msg> {
 }
 
 async fn fetch_meal(id: Uuid) -> Result<Msg, Msg> {
-    let url = format!("{}/meals/{}", URL_BASE.to_string(), id);
+    let url = format!("{}/meals/{}", URL_BASE.replace("\n", ""), id);
     Request::new(url).fetch_json_data(Msg::MealFetched).await
 }
 
