@@ -2,7 +2,7 @@
 
 ## Viewing logs
 
-SSH into machine, use `$ journalctl -u rrmeals.service`.
+SSH into machine, use `journalctl -u rrmeals.service`. Get today's logs: `journalctl -u rrmeals.service --since today`. Logs from a date: `journalctl -u rrmeals.service --since '2020-04-01'`.
 
 Should ship them somewhere at some point in time but :shrug: .
 
