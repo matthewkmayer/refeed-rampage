@@ -439,8 +439,11 @@ async fn is_db_avail(
             true
         }
         Err(e) => {
-            // local one may not be ready yet, wait and retry:
-            if !e.to_string().contains("preexisting table") {
+            // table may not be ready yet, wait and retry
+            // Also, local dynamo returns a different string than real:
+            if !e.to_string().contains("preexisting table")
+                || !e.to_string().contains("Table already exists")
+            {
                 debug!("Table creation request failed: {}", e);
                 return false;
             }
