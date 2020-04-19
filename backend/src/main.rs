@@ -8,7 +8,7 @@ use dynomite::{
 };
 
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use rusoto_core::Region;
+use rusoto_core::{credential::ProfileProvider, HttpClient, Region};
 use serde_derive::{Deserialize, Serialize};
 use shared::Meal;
 use std::collections::HashMap;
@@ -204,7 +204,13 @@ fn get_dynamodb_client() -> dynomite::retry::RetryingDynamoDb<DynamoDbClient> {
     match DYNAMODB_LOC.replace("\n", "").len() {
         0 => {
             info!("Using real Dynamodb");
-            DynamoDbClient::new(Region::UsWest2).with_retries(Policy::default())
+            // use profile provider only
+            let profile_creds =
+                ProfileProvider::new().expect("Couldn't make new Profile credential provider");
+            let http_client = HttpClient::new().expect("Couldn't make new HTTP client");
+            DynamoDbClient::new_with(http_client, profile_creds, Region::UsWest2)
+                .with_retries(Policy::default())
+            // DynamoDbClient::new(Region::UsWest2).with_retries(Policy::default())
         }
         _ => {
             info!("Using local Dynamodb");
