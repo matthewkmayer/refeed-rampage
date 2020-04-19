@@ -200,7 +200,8 @@ async fn healthy() -> Result<Box<dyn warp::Reply>, warp::Rejection> {
 
 // handle local vs "real" dynamodb
 fn get_dynamodb_client() -> dynomite::retry::RetryingDynamoDb<DynamoDbClient> {
-    match DYNAMODB_LOC.len() {
+    // be nice to not have to do this all the time. Use lazy_static?
+    match DYNAMODB_LOC.replace("\n", "").len() {
         0 => {
             info!("Using real Dynamodb");
             DynamoDbClient::new(Region::UsWest2).with_retries(Policy::default())

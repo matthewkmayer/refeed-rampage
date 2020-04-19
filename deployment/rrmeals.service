@@ -11,8 +11,8 @@ ExecStart=/app/backend
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=on-failure
-User=root
-Group=root
+User=ubuntu
+Group=ubuntu
 
 [Install]
 WantedBy=multi-user.target

@@ -14,4 +14,4 @@ This was done because STS assume-role wasn't playing ball.
 
 ## Local DynamoDB
 
-`nohup java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar &` should keep it running.
+`nohup java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb &` should keep it running.
