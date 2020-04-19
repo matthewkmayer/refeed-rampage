@@ -427,8 +427,8 @@ async fn is_db_avail(
             attribute_type: "S".into(),
         }],
         provisioned_throughput: Some(ProvisionedThroughput {
-            read_capacity_units: 1,
-            write_capacity_units: 1,
+            read_capacity_units: 10,  // 25 max for free tier
+            write_capacity_units: 10, // 25 max for free tier
         }),
         ..CreateTableInput::default()
     });
@@ -479,8 +479,8 @@ async fn prepopulate_db(
             attribute_type: "S".into(),
         }],
         provisioned_throughput: Some(ProvisionedThroughput {
-            read_capacity_units: 1,
-            write_capacity_units: 1,
+            read_capacity_units: 10,  // 25 max for free tier
+            write_capacity_units: 10, // 25 max for free tier
         }),
         ..CreateTableInput::default()
     });
