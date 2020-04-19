@@ -210,7 +210,6 @@ fn get_dynamodb_client() -> dynomite::retry::RetryingDynamoDb<DynamoDbClient> {
             let http_client = HttpClient::new().expect("Couldn't make new HTTP client");
             DynamoDbClient::new_with(http_client, profile_creds, Region::UsWest2)
                 .with_retries(Policy::default())
-            // DynamoDbClient::new(Region::UsWest2).with_retries(Policy::default())
         }
         _ => {
             info!("Using local Dynamodb");
