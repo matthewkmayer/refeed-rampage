@@ -14,7 +14,7 @@ Tests for refeed rampage's frontend. End to end tests until a stubbed backend is
 * Goto refeed rampage home
 * Click "Meals"
 * Click "Pizza"
-* Page contains "delicious pizza"
+* Page contains " pizza"
 * Page contains "delete it"
 
 ## Can use back button from meal detail list
@@ -22,7 +22,7 @@ Tests for refeed rampage's frontend. End to end tests until a stubbed backend is
 * Goto refeed rampage home
 * Click "Meals"
 * Click "Pizza"
-* Page contains "delicious pizza"
+* Page contains " pizza"
 * Press the browser's back button
 * Page contains "➕"
 
