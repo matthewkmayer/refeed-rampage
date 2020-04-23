@@ -49,9 +49,9 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - run: npm install wasm-pack
+      - run: cd gauge-tests && npm install wasm-pack
       - run: ./run-em.sh
-      - run: cd gauge-tests && npm install @getgauge/cli taiko && headless_chrome=true npx gauge run specs
+      - run: cd gauge-tests && npm install -g @getgauge/cli taiko && headless_chrome=true npx gauge run specs
       - run: ./shut-em-down.sh # is this needed or will the build service clean up the entire VM?
 
   cuke-tests:
