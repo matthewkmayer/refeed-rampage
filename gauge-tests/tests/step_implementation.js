@@ -12,8 +12,10 @@ afterSuite(async () => {
     await closeBrowser();
 });
 
-gauge.screenshotFn = async function () {
-    return await screenshot({ encoding: 'base64' });
+gauge.customScreenshotWriter = async function () {
+    const screenshotFilePath = path.join(process.env['gauge_screenshots_dir'], `screenshot-${process.hrtime.bigint()}.png`);
+    await screenshot({ path: screenshotFilePath });
+    return path.basename(screenshotFilePath);
 };
 
 
