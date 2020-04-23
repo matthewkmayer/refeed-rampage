@@ -1,6 +1,6 @@
 /* globals gauge*/
 "use strict";
-const { openBrowser, write, closeBrowser, goto, screenshot, text, below, textBox, button, click, clear, $, toLeftOf, goBack } = require('taiko');
+const { openBrowser, write, closeBrowser, goto, screenshot, text, below, textBox, button, click, clear, $, toLeftOf, goBack, path } = require('taiko');
 const assert = require("assert");
 const headless = process.env.headless_chrome.toLowerCase() === 'true';
 
