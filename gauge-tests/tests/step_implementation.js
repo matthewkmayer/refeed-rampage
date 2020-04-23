@@ -3,7 +3,6 @@
 const { openBrowser, write, closeBrowser, goto, screenshot, text, below, textBox, button, click, clear, $, toLeftOf, goBack } = require('taiko');
 const assert = require("assert");
 const headless = process.env.headless_chrome.toLowerCase() === 'true';
-const path = require('path');
 
 beforeSuite(async () => {
     await openBrowser({ headless: headless })
@@ -12,13 +11,6 @@ beforeSuite(async () => {
 afterSuite(async () => {
     await closeBrowser();
 });
-
-gauge.customScreenshotWriter = async function () {
-    const screenshotFilePath = path.join(process.env['gauge_screenshots_dir'], `screenshot-${process.hrtime.bigint()}.png`);
-    await screenshot({ path: screenshotFilePath });
-    return path.basename(screenshotFilePath);
-};
-
 
 step("Page contains <content>", async (content) => {
     assert.ok(await text(content).exists());
