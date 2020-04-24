@@ -63,7 +63,7 @@ fn meal_filters(
     jwtdb: JwtDb,
     ddb_client: dynomite::retry::RetryingDynamoDb<DynamoDbClient>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    a_meal_filter()
+    a_meal_filter(ddb_client.clone())
         .or(all_meal_filter(ddb_client))
         .or(meal_create(jwtdb.clone()))
         .or(meal_delete(jwtdb.clone()))
@@ -106,9 +106,12 @@ fn status_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reje
     warp::path!("health").and(warp::get()).and_then(healthy)
 }
 
-fn a_meal_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+fn a_meal_filter(
+    ddb_client: dynomite::retry::RetryingDynamoDb<DynamoDbClient>,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("meals" / Uuid)
         .and(warp::get())
+        .and(with_ddb(ddb_client))
         .and_then(specific_meal)
 }
 
@@ -239,9 +242,10 @@ fn get_dynamodb_client() -> dynomite::retry::RetryingDynamoDb<DynamoDbClient> {
     }
 }
 
-async fn specific_meal(i: Uuid) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
-    // we should pass one of these around instead of recreating it
-    let client = get_dynamodb_client();
+async fn specific_meal(
+    i: Uuid,
+    client: dynomite::retry::RetryingDynamoDb<DynamoDbClient>,
+) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     let m = Meal {
         id: i,
         ..Default::default()
