@@ -52,16 +52,19 @@ async fn main() {
         .allow_methods(vec!["GET", "POST", "DELETE", "PUT"])
         .allow_headers(vec!["content-type", "Authorization"]);
 
-    let routes = meal_filters(jwtdb).with(&cors).with(warp::log("backend"));
+    let routes = meal_filters(jwtdb, c)
+        .with(&cors)
+        .with(warp::log("backend"));
 
     warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
 }
 
 fn meal_filters(
     jwtdb: JwtDb,
+    ddb_client: dynomite::retry::RetryingDynamoDb<DynamoDbClient>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     a_meal_filter()
-        .or(all_meal_filter())
+        .or(all_meal_filter(ddb_client))
         .or(meal_create(jwtdb.clone()))
         .or(meal_delete(jwtdb.clone()))
         .or(meal_update(jwtdb.clone()))
@@ -78,6 +81,15 @@ fn with_jwtdb(
     db: JwtDb,
 ) -> impl Filter<Extract = (JwtDb,), Error = std::convert::Infallible> + Clone {
     warp::any().map(move || db.clone())
+}
+
+fn with_ddb(
+    ddb_client: dynomite::retry::RetryingDynamoDb<DynamoDbClient>,
+) -> impl Filter<
+    Extract = (dynomite::retry::RetryingDynamoDb<DynamoDbClient>,),
+    Error = std::convert::Infallible,
+> + Clone {
+    warp::any().map(move || ddb_client.clone())
 }
 
 fn login_filter(
@@ -100,8 +112,13 @@ fn a_meal_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Reje
         .and_then(specific_meal)
 }
 
-fn all_meal_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    warp::path!("meals").and(warp::get()).and_then(all_meals)
+fn all_meal_filter(
+    ddb_client: dynomite::retry::RetryingDynamoDb<DynamoDbClient>,
+) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    warp::path!("meals")
+        .and(warp::get())
+        .and(with_ddb(ddb_client))
+        .and_then(all_meals)
 }
 
 fn meal_create(
@@ -203,7 +220,7 @@ fn get_dynamodb_client() -> dynomite::retry::RetryingDynamoDb<DynamoDbClient> {
     // be nice to not have to do this all the time. Use lazy_static?
     match DYNAMODB_LOC.replace("\n", "").len() {
         0 => {
-            info!("Using real Dynamodb");
+            info!("Using real Dynamodb with a new client");
             // use profile provider only
             let profile_creds =
                 ProfileProvider::new().expect("Couldn't make new Profile credential provider");
@@ -212,7 +229,7 @@ fn get_dynamodb_client() -> dynomite::retry::RetryingDynamoDb<DynamoDbClient> {
                 .with_retries(Policy::default())
         }
         _ => {
-            info!("Using local Dynamodb");
+            info!("Using local Dynamodb with a new client");
             DynamoDbClient::new(Region::Custom {
                 name: "us-east-1".into(), // local testing only
                 endpoint: DYNAMODB_LOC.into(),
@@ -288,8 +305,10 @@ async fn update_meal(_id: Uuid, create: Meal) -> Result<Box<dyn warp::Reply>, wa
 }
 
 // wow it's... not great
-async fn all_meals() -> Result<Box<dyn warp::Reply>, warp::Rejection> {
-    let client = get_dynamodb_client();
+async fn all_meals(
+    client: dynomite::retry::RetryingDynamoDb<DynamoDbClient>,
+) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+    // let client = get_dynamodb_client();
     let scan_all_things = client
         .scan(ScanInput {
             table_name: "meals".to_string(),
