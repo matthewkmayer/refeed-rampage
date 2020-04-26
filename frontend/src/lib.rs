@@ -11,6 +11,12 @@ const ENTER_KEY: u32 = 13;
 
 type MealMap = Vec<Meal>;
 
+#[derive(Clone, Debug, PartialEq)]
+enum SortingOptions {
+    StarsAsc,
+    StarsDesc,
+}
+
 // Model
 struct Model {
     meals: MealMap,
@@ -20,6 +26,7 @@ struct Model {
     page: Pages,
     login: Option<LoginInput>,
     auth: Option<String>,
+    sort: Option<SortingOptions>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -54,6 +61,7 @@ impl Default for Model {
             },
             login: None,
             auth: None,
+            sort: None,
         }
     }
 }
@@ -109,12 +117,42 @@ enum Msg {
     Login { login: Option<LoginInput> },
     LoginResp(seed::fetch::ResponseDataResult<LoginResp>),
     LoginFromTxt,
+    ChangeSort,
 }
 
 /// How we update the model
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     // TODO: move these around to group like things together
     match msg {
+        Msg::ChangeSort => {
+            match &model.sort {
+                Some(x) => match x {
+                    SortingOptions::StarsDesc => model.sort = Some(SortingOptions::StarsAsc),
+                    SortingOptions::StarsAsc => model.sort = Some(SortingOptions::StarsDesc),
+                },
+                None => model.sort = Some(SortingOptions::StarsDesc),
+            }
+
+            // TODO: handle switch to a different sort method like date
+
+            match &model.sort {
+                Some(x) => match x {
+                    SortingOptions::StarsAsc => {
+                        log!("wanted: ascending meals is currently {:?}", model.meals);
+                        model.meals.sort_by_key(|y| y.stars);
+                        log!("meals is now {:?}", model.meals);
+                    }
+                    SortingOptions::StarsDesc => {
+                        log!("wanted: descending. meals is currently {:?}", model.meals);
+                        model.meals.sort_by_key(|y| y.stars);
+                        model.meals.reverse();
+                        log!("meals is now {:?}", model.meals);
+                    }
+                },
+                None => (),
+            }
+            // rerender
+        }
         Msg::LoginFromTxt => match &model.login {
             Some(a) => {
                 orders.send_msg(Msg::Login {
@@ -721,7 +759,11 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
                 th![attrs! { At::Scope => "col" }],
                 th!["name", attrs! { At::Scope => "col" }],
                 th!["description", attrs! { At::Scope => "col" }],
-                th!["rating", attrs! { At::Scope => "col" }],
+                th![
+                    "rating",
+                    attrs! { At::Scope => "col" },
+                    simple_ev(Ev::Click, Msg::ChangeSort),
+                ],
             ]],
             tbody![bodies,]
         ]
