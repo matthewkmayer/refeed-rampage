@@ -138,15 +138,11 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             match &model.sort {
                 Some(x) => match x {
                     SortingOptions::StarsAsc => {
-                        log!("wanted: ascending meals is currently {:?}", model.meals);
                         model.meals.sort_by_key(|y| y.stars);
-                        log!("meals is now {:?}", model.meals);
                     }
                     SortingOptions::StarsDesc => {
-                        log!("wanted: descending. meals is currently {:?}", model.meals);
                         model.meals.sort_by_key(|y| y.stars);
                         model.meals.reverse();
-                        log!("meals is now {:?}", model.meals);
                     }
                 },
                 None => (),
@@ -751,6 +747,14 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
         })
         .collect();
 
+    let star_sort_arrow = match &model.sort {
+        Some(x) => match x {
+            SortingOptions::StarsAsc => "rating ⬆️",
+            SortingOptions::StarsDesc => "rating ⬇️",
+        },
+        None => "rating",
+    };
+
     let l = div![
         class!["table-responsive-sm col-9"],
         table![
@@ -760,8 +764,9 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
                 th!["name", attrs! { At::Scope => "col" }],
                 th!["description", attrs! { At::Scope => "col" }],
                 th![
-                    "rating",
+                    star_sort_arrow,
                     attrs! { At::Scope => "col" },
+                    style! { St::Cursor => "pointer" },
                     simple_ev(Ev::Click, Msg::ChangeSort),
                 ],
             ]],
