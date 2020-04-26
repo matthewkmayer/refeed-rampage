@@ -64,8 +64,8 @@ fn meal_filters(
     ddb_client: dynomite::retry::RetryingDynamoDb<DynamoDbClient>,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     a_meal_filter(ddb_client.clone())
-        .or(all_meal_filter(ddb_client))
-        .or(meal_create(jwtdb.clone()))
+        .or(all_meal_filter(ddb_client.clone()))
+        .or(meal_create(ddb_client, jwtdb.clone()))
         .or(meal_delete(jwtdb.clone()))
         .or(meal_update(jwtdb.clone()))
         .or(status_filter())
@@ -125,6 +125,7 @@ fn all_meal_filter(
 }
 
 fn meal_create(
+    ddb_client: dynomite::retry::RetryingDynamoDb<DynamoDbClient>,
     jwtdb: JwtDb,
 ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::path!("meals")
@@ -139,6 +140,7 @@ fn meal_create(
             }
         })
         .and(json_meal_body())
+        .and(with_ddb(ddb_client))
         .and_then(create_meal)
 }
 
@@ -345,10 +347,12 @@ async fn all_meals(
 }
 
 // should work with curl -i -X POST -H "content-type: application/json" -d '{"name":"Wings","id":3,"description":"mmm"}'  http://127.0.0.1:3030/meals/
-pub async fn create_meal(_: (), create: Meal) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+pub async fn create_meal(
+    _: (),
+    create: Meal,
+    client: dynomite::retry::RetryingDynamoDb<DynamoDbClient>,
+) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     log::debug!("create_meal: {:?}", create);
-
-    let client = get_dynamodb_client();
 
     let newone = Meal {
         id: Uuid::new_v4(),
