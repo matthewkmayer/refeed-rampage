@@ -1,8 +1,8 @@
 #![allow(clippy::large_enum_variant)]
 
+pub mod frontend_types;
 mod http_bits;
 use seed::{browser::service::fetch, prelude::*, *};
-use serde::{Deserialize, Serialize};
 use shared::Meal;
 use uuid::Uuid;
 
@@ -10,24 +10,16 @@ static URL_BASE: &str = include_str!("api_loc.txt");
 static GITBITS: &str = include_str!("gitbits.txt");
 const ENTER_KEY: u32 = 13;
 
-type MealMap = Vec<Meal>;
-
-#[derive(Clone, Debug, PartialEq)]
-enum SortingOptions {
-    StarsAsc,
-    StarsDesc,
-}
-
 // Model
 struct Model {
-    meals: MealMap,
+    meals: frontend_types::MealMap,
     meal_under_construction: Meal,
     meal: Meal,
     error: Option<String>,
     page: Pages,
-    login: Option<LoginInput>,
+    login: Option<frontend_types::LoginInput>,
     auth: Option<String>,
-    sort: Option<SortingOptions>,
+    sort: Option<frontend_types::SortingOptions>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -43,7 +35,7 @@ pub enum Pages {
 impl Default for Model {
     fn default() -> Self {
         Self {
-            meals: MealMap::new(),
+            meals: frontend_types::MealMap::new(),
             error: None,
             page: Pages::Home,
             meal_under_construction: Meal {
@@ -78,45 +70,41 @@ impl Model {
     }
 }
 
-#[derive(Serialize)]
-struct CreateMealRequestBody {
-    pub name: String,
-    pub id: Uuid,
-}
-
-// #[derive(Debug, Clone, Deserialize)]
-pub type MealCreatedResponse = Meal;
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct MealDeletedResponse {}
-
 // Update
 #[derive(Clone, Debug)]
 pub enum Msg {
     NoOp,
     // editing
-    EditMeal { meal_id: Uuid },
+    EditMeal {
+        meal_id: Uuid,
+    },
     MealCreateUpdateName(String),
     MealCreateUpdateDescription(String),
     MealCreateUpdateStars(i32),
     CreateNewMeal(Meal),
     SaveMeal(Meal),
     MealValidationError,
-    MealCreated(seed::fetch::ResponseDataResult<MealCreatedResponse>),
+    MealCreated(seed::fetch::ResponseDataResult<frontend_types::MealCreatedResponse>),
     // deleting
-    DeleteMeal { meal_id: Uuid },
-    MealDeleted(seed::fetch::ResponseDataResult<MealDeletedResponse>),
+    DeleteMeal {
+        meal_id: Uuid,
+    },
+    MealDeleted(seed::fetch::ResponseDataResult<frontend_types::MealDeletedResponse>),
     // changing page
     ChangePage(Pages),
     // fetching etc
-    FetchData { meal_id: Option<Uuid> },
-    MealsFetched(fetch::ResponseDataResult<MealMap>),
+    FetchData {
+        meal_id: Option<Uuid>,
+    },
+    MealsFetched(fetch::ResponseDataResult<frontend_types::MealMap>),
     MealFetched(fetch::ResponseDataResult<Meal>),
     // login
     LoginUserUpdated(String),
     LoginPwUpdated(String),
-    Login { login: Option<LoginInput> },
-    LoginResp(seed::fetch::ResponseDataResult<LoginResp>),
+    Login {
+        login: Option<frontend_types::LoginInput>,
+    },
+    LoginResp(seed::fetch::ResponseDataResult<frontend_types::LoginResp>),
     LoginFromTxt,
     ChangeSort,
 }
@@ -128,27 +116,30 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::ChangeSort => {
             match &model.sort {
                 Some(x) => match x {
-                    SortingOptions::StarsDesc => model.sort = Some(SortingOptions::StarsAsc),
-                    SortingOptions::StarsAsc => model.sort = Some(SortingOptions::StarsDesc),
+                    frontend_types::SortingOptions::StarsDesc => {
+                        model.sort = Some(frontend_types::SortingOptions::StarsAsc)
+                    }
+                    frontend_types::SortingOptions::StarsAsc => {
+                        model.sort = Some(frontend_types::SortingOptions::StarsDesc)
+                    }
                 },
-                None => model.sort = Some(SortingOptions::StarsDesc),
+                None => model.sort = Some(frontend_types::SortingOptions::StarsDesc),
             }
 
             // TODO: handle switch to a different sort method like date
 
             match &model.sort {
                 Some(x) => match x {
-                    SortingOptions::StarsAsc => {
+                    frontend_types::SortingOptions::StarsAsc => {
                         model.meals.sort_by_key(|y| y.stars);
                     }
-                    SortingOptions::StarsDesc => {
+                    frontend_types::SortingOptions::StarsDesc => {
                         model.meals.sort_by_key(|y| y.stars);
                         model.meals.reverse();
                     }
                 },
                 None => (),
             }
-            // rerender
         }
         Msg::LoginFromTxt => match &model.login {
             Some(a) => {
@@ -185,7 +176,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::LoginUserUpdated(u) => match model.login.as_mut() {
             Some(m) => m.user = u,
             None => {
-                model.login = Some(LoginInput {
+                model.login = Some(frontend_types::LoginInput {
                     user: u,
                     pw: "".to_string(),
                 })
@@ -194,7 +185,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::LoginPwUpdated(pw) => match model.login.as_mut() {
             Some(m) => m.pw = pw,
             None => {
-                model.login = Some(LoginInput {
+                model.login = Some(frontend_types::LoginInput {
                     user: "".to_string(),
                     pw,
                 })
@@ -750,8 +741,8 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
 
     let star_sort_arrow = match &model.sort {
         Some(x) => match x {
-            SortingOptions::StarsAsc => "rating ⬆️",
-            SortingOptions::StarsDesc => "rating ⬇️",
+            frontend_types::SortingOptions::StarsAsc => "rating ⬆️",
+            frontend_types::SortingOptions::StarsDesc => "rating ⬇️",
         },
         None => "rating",
     };
@@ -856,15 +847,4 @@ fn after_mount(url: Url, _orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
     // This duplicates requests on a new page load or refresh. Figure out why.
     // orders.send_msg(routes(url).unwrap());
     AfterMount::new(m)
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct LoginResp {
-    jwt: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct LoginInput {
-    user: String,
-    pw: String,
 }
