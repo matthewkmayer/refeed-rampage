@@ -1,5 +1,6 @@
 #![allow(clippy::large_enum_variant)]
 
+mod http_bits;
 use seed::{browser::service::fetch, prelude::*, *};
 use serde::{Deserialize, Serialize};
 use shared::Meal;
@@ -30,7 +31,7 @@ struct Model {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-enum Pages {
+pub enum Pages {
     Home,
     Meals,
     ViewSpecificMeal { meal_id: Uuid },
@@ -84,14 +85,14 @@ struct CreateMealRequestBody {
 }
 
 // #[derive(Debug, Clone, Deserialize)]
-type MealCreatedResponse = Meal;
+pub type MealCreatedResponse = Meal;
 
 #[derive(Debug, Clone, Deserialize)]
-struct MealDeletedResponse {}
+pub struct MealDeletedResponse {}
 
 // Update
 #[derive(Clone, Debug)]
-enum Msg {
+pub enum Msg {
     NoOp,
     // editing
     EditMeal { meal_id: Uuid },
@@ -174,7 +175,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         },
         Msg::Login { login: logindeets } => match logindeets {
             Some(l) => {
-                orders.skip().perform_cmd(login(l));
+                orders.skip().perform_cmd(http_bits::login(l));
                 model.error = None;
             }
             None => {
@@ -207,7 +208,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     log!(format!("model auth is something: '{:?}'", model.auth));
                     orders
                         .skip()
-                        .perform_cmd(update_meal(meal, model.auth.clone().unwrap()));
+                        .perform_cmd(http_bits::update_meal(meal, model.auth.clone().unwrap()));
                 }
             } else {
                 model.error = Some("provide a meal first".to_string());
@@ -215,7 +216,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             }
         }
         Msg::EditMeal { meal_id: id } => {
-            orders.skip().perform_cmd(fetch_meal(id));
+            orders.skip().perform_cmd(http_bits::fetch_meal(id));
         }
         Msg::MealDeleted(_) => {
             orders.send_msg(Msg::ChangePage(Pages::Meals));
@@ -227,7 +228,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 log!(format!("model auth is something: '{:?}'", model.auth));
                 orders
                     .skip()
-                    .perform_cmd(delete_meal(id, model.auth.clone().unwrap()));
+                    .perform_cmd(http_bits::delete_meal(id, model.auth.clone().unwrap()));
             }
         }
         Msg::MealValidationError => {
@@ -262,7 +263,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     log!(format!("model auth is something: '{:?}'", model.auth));
                     orders
                         .skip()
-                        .perform_cmd(create_meal(meal, model.auth.clone().unwrap()));
+                        .perform_cmd(http_bits::create_meal(meal, model.auth.clone().unwrap()));
                 }
             } else {
                 log!("error before submission");
@@ -279,8 +280,8 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         }
         Msg::FetchData { meal_id } => {
             match meal_id {
-                Some(id) => orders.skip().perform_cmd(fetch_meal(id)),
-                None => orders.skip().perform_cmd(fetch_meals()),
+                Some(id) => orders.skip().perform_cmd(http_bits::fetch_meal(id)),
+                None => orders.skip().perform_cmd(http_bits::fetch_meals()),
             };
         }
         Msg::MealsFetched(Ok(meals)) => {
@@ -777,57 +778,6 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
     vec![l, b]
 }
 
-// https://seed-rs.org/guide/http-requests-and-state
-
-async fn fetch_meals() -> Result<Msg, Msg> {
-    log!("Fetching meals");
-    let url = format!("{}/meals", URL_BASE.replace("\n", ""));
-    Request::new(url).fetch_json_data(Msg::MealsFetched).await
-}
-
-async fn delete_meal(id: Uuid, auth: String) -> Result<Msg, Msg> {
-    let url = format!("{}/meals/{}", URL_BASE.replace("\n", ""), id);
-    Request::new(url)
-        .method(Method::Delete)
-        .header("Authorization", &format!("bearer: {}", auth))
-        .fetch_json_data(Msg::MealDeleted)
-        .await
-}
-
-async fn create_meal(meal: Meal, auth: String) -> Result<Msg, Msg> {
-    let url = format!("{}/meals", URL_BASE.replace("\n", ""));
-    Request::new(url)
-        .method(Method::Post)
-        .header("Authorization", &format!("bearer: {}", auth))
-        .send_json(&meal)
-        .fetch_json_data(Msg::MealCreated)
-        .await
-}
-
-async fn login(login: LoginInput) -> Result<Msg, Msg> {
-    let url = format!("{}/login", URL_BASE.replace("\n", ""));
-    Request::new(url)
-        .method(Method::Post)
-        .send_json(&login)
-        .fetch_json_data(Msg::LoginResp)
-        .await
-}
-
-async fn update_meal(meal: Meal, auth: String) -> Result<Msg, Msg> {
-    let url = format!("{}/meals/{}", URL_BASE.replace("\n", ""), meal.id);
-    Request::new(url)
-        .method(Method::Put)
-        .header("Authorization", &format!("bearer: {}", auth))
-        .send_json(&meal)
-        .fetch_json_data(Msg::MealCreated)
-        .await
-}
-
-async fn fetch_meal(id: Uuid) -> Result<Msg, Msg> {
-    let url = format!("{}/meals/{}", URL_BASE.replace("\n", ""), id);
-    Request::new(url).fetch_json_data(Msg::MealFetched).await
-}
-
 fn routes(url: Url) -> Option<Msg> {
     if url.path.is_empty() {
         return Some(Msg::ChangePage(Pages::Home));
@@ -909,12 +859,12 @@ fn after_mount(url: Url, _orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-struct LoginResp {
+pub struct LoginResp {
     jwt: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-struct LoginInput {
+pub struct LoginInput {
     user: String,
     pw: String,
 }
