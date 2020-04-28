@@ -1,5 +1,6 @@
 #![allow(clippy::large_enum_variant)]
 
+mod breadcrumbs;
 pub mod frontend_types;
 mod http_bits;
 use seed::{browser::service::fetch, prelude::*, *};
@@ -372,7 +373,11 @@ fn view(model: &Model) -> impl View<Msg> {
     };
     let main = main![
         class!["container"],
-        div![class!["jumbotron"], page_contents],
+        div![
+            class!["jumbotron"],
+            breadcrumbs::breadcrumbs(&model.page, &model.meal, &model.meal_under_construction),
+            page_contents
+        ],
     ];
 
     vec![nav(model), main, footer()]
