@@ -48,6 +48,7 @@ async fn main() {
     let cors = warp::cors()
         .allow_origin("http://localhost:8080")
         .allow_origin("http://127.0.0.1:8080")
+        .allow_origin("http://refeed.local:8080")
         .allow_origin("https://rampage.screaming3d.com")
         .allow_methods(vec!["GET", "POST", "DELETE", "PUT"])
         .allow_headers(vec!["content-type", "Authorization"]);
@@ -417,7 +418,13 @@ pub async fn login(jwtdb: JwtDb, login: Login) -> Result<Box<dyn warp::Reply>, w
         // return jwt
         let resp = LoginResp { jwt: token };
         let r = warp::reply::json(&resp);
-        Ok(Box::new(warp::reply::with_status(r, StatusCode::OK)))
+
+        let r2 = warp::reply::with_header(
+            r,
+            warp::http::header::SET_COOKIE,
+            format!("rtoken=\"{}\"", resp.jwt),
+        );
+        Ok(Box::new(warp::reply::with_status(r2, StatusCode::OK)))
     } else {
         debug!("Incorrect username/pw");
         // we should see about leveraging nginx to also help with throttling to prevent brute force attempts
