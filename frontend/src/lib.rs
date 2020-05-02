@@ -157,6 +157,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 let storage = seed::storage::get_storage().unwrap();
                 seed::storage::store_data(&storage, "authjwt", &login_ok);
                 model.auth = Some(login_ok.jwt);
+                seed::push_route(vec!["meals"]);
                 orders.send_msg(Msg::ChangePage(Pages::Meals));
             }
             Err(e) => {
@@ -198,6 +199,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     orders.send_msg(Msg::ChangePage(Pages::Login));
                 } else {
                     log!(format!("model auth is something: '{:?}'", model.auth));
+                    seed::push_route(vec!["meals", &meal.id.to_string()]);
                     orders
                         .skip()
                         .perform_cmd(http_bits::update_meal(meal, model.auth.clone().unwrap()));
@@ -265,6 +267,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         }
         Msg::MealCreated(Ok(m)) => {
             model.error = None;
+            seed::push_route(vec!["meals", &m.id.to_string()]);
             orders.send_msg(Msg::ChangePage(Pages::ViewSpecificMeal { meal_id: m.id }));
         }
         Msg::MealCreated(Err(fail_reason)) => {
