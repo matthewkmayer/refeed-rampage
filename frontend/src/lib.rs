@@ -213,6 +213,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             orders.skip().perform_cmd(http_bits::fetch_meal(id));
         }
         Msg::MealDeleted(_) => {
+            seed::push_route(vec!["meals"]);
             orders.send_msg(Msg::ChangePage(Pages::Meals));
         }
         Msg::DeleteMeal { meal_id: id } => {
