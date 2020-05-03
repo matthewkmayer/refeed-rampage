@@ -105,6 +105,7 @@ pub enum Msg {
     Login {
         login: Option<frontend_types::LoginInput>,
     },
+    Logout,
     LoginResp(seed::fetch::ResponseDataResult<frontend_types::LoginResp>),
     LoginFromTxt,
     ChangeSort,
@@ -115,6 +116,11 @@ pub enum Msg {
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     // TODO: move these around to group like things together
     match msg {
+        Msg::Logout => {
+            let storage = seed::storage::get_storage().unwrap();
+            seed::storage::store_data(&storage, "authjwt", &"".to_string());
+            model.auth = None;
+        }
         Msg::Rehydrate => {
             let storage = seed::storage::get_storage().unwrap();
             let j = match storage.get_item("authjwt") {
@@ -590,7 +596,12 @@ fn nav_nodes(model: &Model) -> Vec<Node<Msg>> {
             ]
         ],
         match model.auth {
-            Some(_) => a!["Logout", class!["nav-link"]], // later we can put user name in here: "log out Matthew"
+            Some(_) => a![
+                "Logout",
+                simple_ev(Ev::Click, Msg::Logout),
+                style! {St::Cursor => "pointer"},
+                class!["nav-link"]
+            ], // later we can put user name in here: "log out Matthew"
             None => a!["Login", class!["nav-link"], attrs! {At::Href => "/login"}],
         },
     ]

@@ -14,7 +14,6 @@ pub async fn delete_meal(id: Uuid, auth: String) -> Result<Msg, Msg> {
 }
 
 pub async fn fetch_meals() -> Result<Msg, Msg> {
-    log!("Fetching meals");
     let url = format!("{}/meals", URL_BASE.replace("\n", ""));
     Request::new(url).fetch_json_data(Msg::MealsFetched).await
 }
