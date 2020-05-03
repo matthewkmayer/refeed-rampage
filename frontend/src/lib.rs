@@ -3,6 +3,7 @@
 mod breadcrumbs;
 pub mod frontend_types;
 mod http_bits;
+mod stars;
 use seed::{browser::service::fetch, prelude::*, *};
 use shared::Meal;
 use uuid::Uuid;
@@ -123,13 +124,14 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         }
         Msg::Rehydrate => {
             let storage = seed::storage::get_storage().unwrap();
-            let j = match storage.get_item("authjwt") {
+            let mut j = match storage.get_item("authjwt") {
                 Ok(a) => match a {
                     Some(b) => b,
                     None => "".to_string(),
                 },
                 Err(_) => "".to_string(),
             };
+            j = j.replace("\"", "");
             if !j.is_empty() {
                 model.auth = Some(j);
             }
@@ -508,9 +510,7 @@ fn create_meal_view(model: &Model) -> Vec<Node<Msg>> {
                 div![
                     class!["form-group col-md-6"],
                     label!["Meal rating",],
-                    // how to handle input...
-                    // show existing stars
-                    clickable_stars(model.meal_under_construction.stars)
+                    stars::clickable_stars(model.meal_under_construction.stars)
                 ],
             ],
         ],
@@ -632,119 +632,13 @@ fn nav(model: &Model) -> Node<Msg> {
     ]
 }
 
-fn clickable_star(rating: i32, active: bool) -> Node<Msg> {
-    if active {
-        span![
-            "⭐",
-            style! {St::Cursor => "pointer"},
-            simple_ev(Ev::Click, Msg::MealCreateUpdateStars(rating)),
-        ]
-    } else {
-        span![
-            "⭐",
-            style! {"color" => "transparent", "text-shadow" => "0 0 0 white", St::Cursor => "pointer"},
-            simple_ev(Ev::Click, Msg::MealCreateUpdateStars(rating)),
-        ]
-    }
-}
-
-// each star is clickable and sends a message
-fn clickable_stars(stars: Option<i32>) -> Node<Msg> {
-    let no_stars = p![
-        clickable_star(1, false),
-        clickable_star(2, false),
-        clickable_star(3, false),
-        clickable_star(4, false),
-        clickable_star(5, false),
-    ];
-    match stars {
-        None => no_stars,
-        Some(1) => p![
-            clickable_star(1, true),
-            clickable_star(2, false),
-            clickable_star(3, false),
-            clickable_star(4, false),
-            clickable_star(5, false),
-        ],
-        Some(2) => p![
-            clickable_star(1, true),
-            clickable_star(2, true),
-            clickable_star(3, false),
-            clickable_star(4, false),
-            clickable_star(5, false),
-        ],
-        Some(3) => p![
-            clickable_star(1, true),
-            clickable_star(2, true),
-            clickable_star(3, true),
-            clickable_star(4, false),
-            clickable_star(5, false),
-        ],
-        Some(4) => p![
-            clickable_star(1, true),
-            clickable_star(2, true),
-            clickable_star(3, true),
-            clickable_star(4, true),
-            clickable_star(5, false),
-        ],
-        Some(5) => p![
-            clickable_star(1, true),
-            clickable_star(2, true),
-            clickable_star(3, true),
-            clickable_star(4, true),
-            clickable_star(5, true),
-        ],
-        _ => no_stars,
-    }
-}
-
-fn stars(stars: Option<i32>) -> Node<Msg> {
-    let no_stars = p![
-        "⭐⭐⭐⭐⭐",
-        style! {"color" => "transparent", "text-shadow" => "0 0 0 white"}
-    ];
-    match stars {
-        None => no_stars,
-        Some(1) => p![
-            span!["⭐"],
-            span![
-                "⭐⭐⭐⭐",
-                style! {"color" => "transparent", "text-shadow" => "0 0 0 white"}
-            ]
-        ],
-        Some(2) => p![
-            span!["⭐⭐"],
-            span![
-                "⭐⭐⭐",
-                style! {"color" => "transparent", "text-shadow" => "0 0 0 white"}
-            ]
-        ],
-        Some(3) => p![
-            span!["⭐⭐⭐"],
-            span![
-                "⭐⭐",
-                style! {"color" => "transparent", "text-shadow" => "0 0 0 white"}
-            ]
-        ],
-        Some(4) => p![
-            span!["⭐⭐⭐⭐"],
-            span![
-                "⭐",
-                style! {"color" => "transparent", "text-shadow" => "0 0 0 white"}
-            ]
-        ],
-        Some(5) => p!["⭐⭐⭐⭐⭐"],
-        _ => no_stars,
-    }
-}
-
 // for a detail view
 fn meal_item(m: &Meal) -> Node<Msg> {
     // how do we apply the style to some of the tag?
     div![
         h4![
             m.name,
-            div![p![m.description, class!["lead"]], stars(m.stars)]
+            div![p![m.description, class!["lead"]], stars::stars(m.stars)]
         ],
         button![
             simple_ev(Ev::Click, Msg::DeleteMeal { meal_id: m.id }),
@@ -768,7 +662,7 @@ fn meal_list(model: &Model) -> Vec<Node<Msg>> {
                 ]],
                 td![m.name],
                 td![m.description],
-                td![stars(m.stars)]
+                td![stars::stars(m.stars)]
             ]
         })
         .collect();
