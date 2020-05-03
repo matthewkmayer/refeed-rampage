@@ -108,12 +108,26 @@ pub enum Msg {
     LoginResp(seed::fetch::ResponseDataResult<frontend_types::LoginResp>),
     LoginFromTxt,
     ChangeSort,
+    Rehydrate,
 }
 
 /// How we update the model
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     // TODO: move these around to group like things together
     match msg {
+        Msg::Rehydrate => {
+            let storage = seed::storage::get_storage().unwrap();
+            let j = match storage.get_item("authjwt") {
+                Ok(a) => match a {
+                    Some(b) => b,
+                    None => "".to_string(),
+                },
+                Err(_) => "".to_string(),
+            };
+            if !j.is_empty() {
+                model.auth = Some(j);
+            }
+        }
         Msg::ChangeSort => {
             match &model.sort {
                 Some(x) => match x {
@@ -155,7 +169,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             Ok(login_ok) => {
                 model.error = None;
                 let storage = seed::storage::get_storage().unwrap();
-                seed::storage::store_data(&storage, "authjwt", &login_ok);
+                seed::storage::store_data(&storage, "authjwt", &login_ok.jwt);
                 model.auth = Some(login_ok.jwt);
                 seed::push_route(vec!["meals"]);
                 orders.send_msg(Msg::ChangePage(Pages::Meals));
@@ -824,7 +838,9 @@ pub fn render() {
         .build_and_start();
 }
 
-fn after_mount(url: Url, _orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
+fn after_mount(url: Url, orders: &mut impl Orders<Msg>) -> AfterMount<Model> {
+    // try to rehydrate stored jwt
+    orders.send_msg(Msg::Rehydrate);
     let mut m: Model = Default::default();
 
     // same code as `routes`
