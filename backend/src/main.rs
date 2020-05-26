@@ -194,7 +194,7 @@ async fn delete_meal(i: Uuid) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
             key: m.key(),
             ..DeleteItemInput::default()
         })
-        .sync();
+        .await;
 
     match del {
         Ok(deleted_item) => {
@@ -259,7 +259,7 @@ async fn specific_meal(
             key: m.key(),
             ..GetItemInput::default()
         })
-        .sync()
+        .await
         .map(|result| result.item.map(Meal::from_attrs));
     match item {
         Ok(item_found) => {
@@ -294,7 +294,7 @@ async fn update_meal(_id: Uuid, create: Meal) -> Result<Box<dyn warp::Reply>, wa
             item: create.clone().into(),
             ..PutItemInput::default()
         })
-        .sync();
+        .await;
     match d_result {
         Ok(_) => {
             let r = warp::reply::json(&create);
@@ -311,18 +311,15 @@ async fn update_meal(_id: Uuid, create: Meal) -> Result<Box<dyn warp::Reply>, wa
     }
 }
 
-// wow it's... not great
 async fn all_meals(
     client: dynomite::retry::RetryingDynamoDb<DynamoDbClient>,
 ) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
-    // let client = get_dynamodb_client();
     let scan_all_things = client
         .scan(ScanInput {
             table_name: "meals".to_string(),
             ..ScanInput::default()
         })
-        .sync();
-
+        .await;
     match scan_all_things {
         Ok(s) => {
             let doot: Vec<Meal> = s
@@ -366,7 +363,7 @@ pub async fn create_meal(
             item: newone.clone().into(),
             ..PutItemInput::default()
         })
-        .sync();
+        .await;
     match d_result {
         Ok(_) => {
             info!("aww yiss added it");
@@ -465,7 +462,7 @@ async fn is_db_avail(
         }),
         ..CreateTableInput::default()
     });
-    let f = create_table_req.sync();
+    let f = create_table_req.await;
     match f {
         Ok(_) => {
             debug!("All good making table");
@@ -487,7 +484,7 @@ async fn is_db_avail(
 async fn prepopulate_db(
     client: dynomite::retry::RetryingDynamoDb<dynomite::dynamodb::DynamoDbClient>,
 ) {
-    let mut attempts = 0;
+    let mut attempts: i32 = 0;
     loop {
         debug!("Waiting for the db to be available");
         if is_db_avail(client.clone()).await {
@@ -519,14 +516,13 @@ async fn prepopulate_db(
         }),
         ..CreateTableInput::default()
     });
-    let f = create_table_req.sync();
+    let f = create_table_req.await;
     match f {
         Ok(_) => debug!("All good making table"),
         Err(e) => {
             debug!("Issue creating table: {:?}. Forging ahead anyways.", e);
         }
     }
-
     let id = Uuid::parse_str("f11b1c5e-d6d8-4dce-8a9d-9e05d870b881").unwrap();
     let mut m = Meal {
         id,
@@ -542,7 +538,7 @@ async fn prepopulate_db(
             item: m.clone().into(),
             ..PutItemInput::default()
         })
-        .sync();
+        .await;
 
     m.id = Uuid::parse_str("936DA01F9ABD4d9d80C702AF85C822A8").unwrap();
     m.name = "Pizza".to_string();
@@ -552,10 +548,10 @@ async fn prepopulate_db(
     let _ = client
         .put_item(PutItemInput {
             table_name,
-            item: m.into(),
+            item: m.clone().into(),
             ..PutItemInput::default()
         })
-        .sync();
+        .await;
 }
 
 async fn is_authed(auth: String, jwtdb: JwtDb) -> bool {

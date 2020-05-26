@@ -16,8 +16,8 @@ pretty_env_logger = "0.3"
 serde = "1.0"
 serde_derive = "1.0"
 uuid = { version = "0.8", features = ["serde", "v4"] }
-dynomite = { version = "0.7", features = ["rustls", "derive"], default-features = false }
-rusoto_core = {version = "0.41", features = ["rustls"], default-features = false }
+dynomite = { version = "0.8", features = ["rustls", "derive"], default-features = false }
+rusoto_core = {version = "0.43", features = ["rustls"], default-features = false }
 jsonwebtoken = "7"
 
 shared = { path = "../shared", features = ["dynamo_bits"] }
