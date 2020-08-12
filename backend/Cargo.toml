@@ -16,7 +16,7 @@ pretty_env_logger = "0.3"
 serde = "1.0"
 serde_derive = "1.0"
 uuid = { version = "0.8", features = ["serde", "v4"] }
-dynomite = { version = "0.8", features = ["rustls", "derive"], default-features = false }
+dynomite = { version = "0.9", features = ["rustls", "derive"], default-features = false }
 rusoto_core = {version = "0.44", features = ["rustls"], default-features = false }
 jsonwebtoken = "7"
 

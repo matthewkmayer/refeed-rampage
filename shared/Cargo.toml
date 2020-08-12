@@ -5,7 +5,7 @@ authors = ["Matthew Mayer <matthewkmayer@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-dynomite = { version = "0.8", features = ["rustls", "derive"], default-features = false, optional = true }
+dynomite = { version = "0.9", features = ["rustls", "derive"], default-features = false, optional = true }
 uuid = { version = "0.8", features = ["serde", "v4"] }
 serde = "1.0"
 serde_derive = "1.0"
