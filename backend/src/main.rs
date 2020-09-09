@@ -1,3 +1,4 @@
+mod backend_types;
 mod s3_interactions;
 
 use dynomite::{
@@ -11,7 +12,6 @@ use dynomite::{
 
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rusoto_core::{credential::ProfileProvider, HttpClient, Region};
-use serde_derive::{Deserialize, Serialize};
 use shared::Meal;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -220,7 +220,7 @@ async fn healthy() -> Result<Box<dyn warp::Reply>, warp::Rejection> {
         0 => "dev".to_string(),
         _ => GITBITS.to_string().replace('\n', ""),
     };
-    let h = Health {
+    let h = backend_types::Health {
         healthy: true,
         version: version_txt,
     };
@@ -346,7 +346,7 @@ async fn all_meals(
         }
         Err(e) => {
             info!("nope: {:?}", e);
-            let r = warp::reply::json(&ErrorResp {
+            let r = warp::reply::json(&backend_types::ErrorResp {
                 error: e.to_string(),
             });
             Ok(Box::new(warp::reply::with_status(
@@ -385,7 +385,7 @@ pub async fn create_meal(
         }
         Err(e) => {
             info!("blew up: {:?}", e);
-            let r = warp::reply::json(&ErrorResp {
+            let r = warp::reply::json(&backend_types::ErrorResp {
                 error: e.to_string(),
             });
             Ok(Box::new(warp::reply::with_status(
@@ -397,7 +397,10 @@ pub async fn create_meal(
 }
 
 // curl -i -X POST -d '{"user": "foo", "pw": "bar"}' -H "Content-type: application/json" localhost:3030/login
-pub async fn login(jwtdb: JwtDb, login: Login) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
+pub async fn login(
+    jwtdb: JwtDb,
+    login: backend_types::Login,
+) -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     // why with the newlines?
     if login.user == "matthew" && login.pw == SECUREPW.replace('\n', "") {
         debug!("Successful login");
@@ -407,7 +410,7 @@ pub async fn login(jwtdb: JwtDb, login: Login) -> Result<Box<dyn warp::Reply>, w
             .unwrap()
             .as_secs()
             + 10_000_000; // forever-ish
-        let claims = Claims {
+        let claims = backend_types::Claims {
             exp: in_future as u32,
             sub: login.user,
         };
@@ -426,7 +429,7 @@ pub async fn login(jwtdb: JwtDb, login: Login) -> Result<Box<dyn warp::Reply>, w
         debug!("inserted token into db: {:?}", token);
 
         // return jwt
-        let resp = LoginResp { jwt: token };
+        let resp = backend_types::LoginResp { jwt: token };
         let r = warp::reply::json(&resp);
 
         let r2 = warp::reply::with_header(
@@ -447,7 +450,8 @@ pub async fn login(jwtdb: JwtDb, login: Login) -> Result<Box<dyn warp::Reply>, w
     }
 }
 
-fn json_login_body() -> impl Filter<Extract = (Login,), Error = warp::Rejection> + Clone {
+fn json_login_body(
+) -> impl Filter<Extract = (backend_types::Login,), Error = warp::Rejection> + Clone {
     warp::body::content_length_limit(1024 * 16).and(warp::body::json())
 }
 
@@ -570,7 +574,7 @@ async fn prepopulate_db(
 async fn is_authed(auth: String, jwtdb: JwtDb) -> bool {
     debug!("Checking this jwt: {}", auth);
     let a = auth.replace("bearer: ", "");
-    let token = decode::<Claims>(
+    let token = decode::<backend_types::Claims>(
         &a,
         &DecodingKey::from_secret(JWT_SECRET.as_ref()),
         &Validation::default(),
@@ -591,32 +595,4 @@ async fn is_authed(auth: String, jwtdb: JwtDb) -> bool {
             false
         }
     }
-}
-
-#[derive(Serialize)]
-pub struct ErrorResp {
-    error: String,
-}
-
-#[derive(Serialize, Debug)]
-struct Health {
-    healthy: bool,
-    version: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct Login {
-    user: String,
-    pw: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    exp: u32,    // Required (validate_exp defaults to true in validation). Expiration time
-    sub: String, // Optional. Subject (whom token refers to)
-}
-
-#[derive(Debug, Serialize)]
-struct LoginResp {
-    jwt: String,
 }
