@@ -9,16 +9,16 @@ seed = "^0.6.0"
 wasm-bindgen = "^0.2.50"
 tokio = { version = "0.2", features = ["macros"] }
 futures = { version = "0.3" }
-warp = "0.2"
+warp = "0.2.5"
 rand = "0.7"
 log = "0.4"
 pretty_env_logger = "0.3"
 serde = "1.0"
 serde_derive = "1.0"
 uuid = { version = "0.8", features = ["serde", "v4"] }
-dynomite = { version = "0.9", features = ["rustls", "derive"], default-features = false }
-rusoto_core = {version = "0.44", features = ["rustls"], default-features = false }
-rusoto_s3 = {version = "0.44", features = ["rustls"], default-features = false }
+dynomite = { version = "0.10", features = ["rustls", "derive"], default-features = false }
+rusoto_core = {version = "0.45", features = ["rustls"], default-features = false }
+rusoto_s3 = {version = "0.45", features = ["rustls"], default-features = false }
 jsonwebtoken = "7"
 
 shared = { path = "../shared", features = ["dynamo_bits"] }
