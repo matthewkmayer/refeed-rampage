@@ -60,3 +60,31 @@ fn get_s3_client(s3_loc: &str) -> S3Client {
         }
     }
 }
+
+// take a pipe separated list of keys and turn them into a vector of keys
+// of S3 items
+pub fn keys_from_list(key_list: &str) -> Vec<String> {
+    let keys = key_list
+        .split('|')
+        .filter(|x| !x.is_empty())
+        .map(|x| x.to_string())
+        .collect();
+
+    keys
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_key_splitting() {
+        assert_eq!(keys_from_list("a|b|c|d"), vec!["a", "b", "c", "d"]);
+
+        assert_eq!(keys_from_list("a|"), vec!["a"]);
+
+        assert_eq!(keys_from_list("a"), vec!["a"]);
+
+        assert_eq!(keys_from_list("|a"), vec!["a"]);
+    }
+}

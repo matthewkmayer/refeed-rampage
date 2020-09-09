@@ -11,6 +11,7 @@ pub struct Meal {
     pub name: String,
     #[cfg_attr(feature = "dynamo_bits", dynomite(partition_key))]
     pub id: Uuid,
+    // This will be populated by the backend as presigned URLs for the frontend to fetch
     pub photos: Option<String>,
     pub description: String,
     pub stars: Option<i32>,

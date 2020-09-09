@@ -271,6 +271,12 @@ async fn specific_meal(
     match item {
         Ok(item_found) => {
             info!("success, item be all {:?}", item_found);
+            // TODO: get image locations here and return them with presigned URLs
+            // something similar to this but working:
+            // let _images = s3_interactions::keys_from_list(&item_found.unwrap().unwrap().photos.unwrap())
+
+            // temporarily get rid of compiler warnings about unused function:
+            let _images = s3_interactions::keys_from_list("fake");
             let r = warp::reply::json(&item_found.unwrap().unwrap());
             return Ok(Box::new(warp::reply::with_status(r, StatusCode::OK)));
         }
