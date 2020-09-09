@@ -1,3 +1,5 @@
+mod s3_interactions;
+
 use dynomite::{
     dynamodb::{
         AttributeDefinition, CreateTableInput, DeleteItemInput, DynamoDb, DynamoDbClient,
@@ -9,7 +11,6 @@ use dynomite::{
 
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rusoto_core::{credential::ProfileProvider, HttpClient, Region};
-use rusoto_s3::{S3, S3Client, CreateBucketRequest};
 use serde_derive::{Deserialize, Serialize};
 use shared::Meal;
 use std::collections::HashMap;
@@ -26,7 +27,7 @@ extern crate log;
 
 static BUCKET_NAME: &str = "refeed-rampage";
 static DYNAMODB_LOC: &str = include_str!("ddb_loc.txt");
-static S3_LOC: &str = include_str!("s3_loc.txt"); 
+static S3_LOC: &str = include_str!("s3_loc.txt");
 static SECUREPW: &str = include_str!("password.txt"); // this is for testing purposes
 static JWT_SECRET: &str = include_str!("jwtsecret.txt");
 static GITBITS: &str = include_str!("gitbits.txt");
@@ -47,7 +48,7 @@ async fn main() {
     prepopulate_db(c.clone()).await;
 
     // do a connectivity check - we need the bucket
-    create_bucket_if_needed().await;
+    s3_interactions::create_bucket_if_needed(S3_LOC, BUCKET_NAME).await;
 
     let jwtdb: JwtDb = Arc::new(Mutex::new(HashMap::new()));
 
@@ -225,64 +226,6 @@ async fn healthy() -> Result<Box<dyn warp::Reply>, warp::Rejection> {
     };
     let r = warp::reply::json(&h);
     Ok(Box::new(warp::reply::with_status(r, StatusCode::OK)))
-}
-
-// create the bucket we use if it doesn't exist yet
-async fn create_bucket_if_needed() {
-    let s = get_s3_client();
-
-    match s.list_buckets().await {
-        Err(e) => panic!("nooooo #{:?}", e),
-        Ok(r) => {
-            // check if our bucket is available
-            info!("result is all #{:?}", r);
-            if r.buckets.is_some() {
-                match r.buckets.unwrap().iter().any(|x| x.name.as_ref().unwrap() == BUCKET_NAME) {
-                    true => {
-                        info!("bucket present, let's rock");
-                        return
-                    },
-                    false => {
-                        info!("need to create bucket")
-                    },
-                }
-            }
-            // if we got here it's time to create the bucket
-            info!("create ze bucket");
-            let cb_req = CreateBucketRequest {
-                bucket: BUCKET_NAME.to_string(),
-                ..Default::default()
-            };
-            let cb_res = s.create_bucket(cb_req).await;
-            match cb_res {
-                Err(e) => panic!("couldn't create bucket when it didn't exist: #{:?}", e),
-                Ok(o) => info!("created bucket: #{:?}", o),
-            }
-        }
-    }
-}
-
-// handle local vs real S3
-fn get_s3_client() -> S3Client {
-    // be nice to not have to do this all the time. Use lazy_static?
-    match S3_LOC.replace("\n", "").len() {
-        0 => {
-            info!("Using real S3 with a new client");
-            // use profile provider only
-            let profile_creds =
-                ProfileProvider::new().expect("Couldn't make new Profile credential provider");
-            let http_client = HttpClient::new().expect("Couldn't make new HTTP client");
-            S3Client::new_with(http_client, profile_creds, Region::UsWest2)
-        }
-        _ => {
-            info!("Using local S3 with a new client");
-            S3Client::new(Region::Custom {
-                name: "us-east-1".into(), // local testing only
-                endpoint: S3_LOC.into(),
-            })
-        }
-    }
-    
 }
 
 // handle local vs "real" dynamodb
