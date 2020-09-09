@@ -94,6 +94,7 @@ dependencies = [
  "rand 0.7.3",
  "reqwest",
  "rusoto_core",
+ "rusoto_s3",
  "seed",
  "serde",
  "serde_derive",
@@ -1927,6 +1928,19 @@ dependencies = [
  "rusoto_core",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "rusoto_s3"
+version = "0.44.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eebe039c71a8ab54ce6614e2967ef034bb3202f306e4025901f620cdfa5680c8"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "futures",
+ "rusoto_core",
+ "xml-rs",
 ]
 
 [[package]]

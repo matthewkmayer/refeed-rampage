@@ -18,6 +18,7 @@ jobs:
           toolchain: stable
           override: true
       - run: echo "" > backend/src/ddb_loc.txt # for using real dynamodb
+      - run: echo "" > backend/src/s3_loc.txt # for using real s3
       - run: echo ${{ github.ref }} | sed -e 's#refs/tags/##' > backend/src/gitbits.txt
       - run: echo ${{ secrets.JWTS }} > backend/src/jwtsecret.txt
       - run: echo ${{ secrets.PASSWD }} > backend/src/password.txt
