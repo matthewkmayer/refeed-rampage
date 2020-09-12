@@ -48,7 +48,6 @@ async fn main() {
     // a bunch from https://github.com/seanmonstar/warp/blob/master/examples/todos.rs
     prepopulate_db(c.clone()).await;
 
-    // do a connectivity check - we need the bucket
     s3_interactions::create_bucket_if_needed(S3_LOC, BUCKET_NAME).await;
 
     let jwtdb: JwtDb = Arc::new(Mutex::new(HashMap::new()));
