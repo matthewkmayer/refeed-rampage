@@ -74,7 +74,7 @@ mod example_steps {
 
         then "I can see that meal" |world, _step| {
           println!("meal is {:?}", world.meal);
-          assert_eq!(world.meal.name.len() < 0, true);
+          assert_eq!(world.meal.name.len() > 0, true);
           assert_eq!(world.meal.description.len() > 0, true);
           assert_eq!(world.meal.stars.is_some(), true);
       };
