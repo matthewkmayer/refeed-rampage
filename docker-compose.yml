@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+
+  minio:
+    image: minio/minio@sha256:33c2f3f08ef1c48a3c7d485f3511cc0a3945258eb4e077c4540ec700d7dbd4a3
+    ports: 
+      - 9000:9000
+    command: "server /data"
+    environment:
+      - MINIO_ACCESS_KEY=AKIAIOSFODNN7EXAMPLE
+      - MINIO_SECRET_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+  dynamodb:
+    image: amazon/dynamodb-local@sha256:3bf539a420178b89f9dc696f5883cf889f11e381ffb25a7e18f01ba685f4f752
+    ports:
+      - 8000:8000
+
+  webserver:
+    image: robertohuertasm/microserver:v0.1.8@sha256:301a5980bb6c6b74a15aa79d1f06cb94bc11b226073b162a6f53567f80223b22
+    ports:
+      - 8080:9090
+    volumes:
+      - ./frontend/:/app
