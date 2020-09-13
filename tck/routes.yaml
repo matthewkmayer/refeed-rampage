@@ -1,4 +1,0 @@
-routes:
-  "/meals":
-    type: "static"
-    backend: "http://duty:4567"
