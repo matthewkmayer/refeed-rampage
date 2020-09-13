@@ -6,7 +6,7 @@ Tests for refeed rampage's frontend. End to end tests until a stubbed backend is
 
 * Goto refeed rampage home
 * Click "Meals"
-* Page contains "Pizza"
+* Page contains "Pizza2"
 * Page contains "Burritos"
 
 ## See a default meal's detail page
