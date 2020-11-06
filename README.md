@@ -1,8 +1,12 @@
-# refeed-rampage
+# refeed-rampage (archived)
 
 Tracking refeed meals.
 
 ![Build](https://github.com/matthewkmayer/refeed-rampage/workflows/Build/badge.svg)
+
+## Project status
+
+This project has been put on hold as of Nov 2020. The repository will stick around for reference but the project has been shelved.
 
 ## What is this?
 
